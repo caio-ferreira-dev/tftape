@@ -1,0 +1,15 @@
+{
+  "title_contains": ["teamfight tactics", "tft"],
+  "process_candidates": [
+    "teamfight tactics.exe",
+    "tft.exe",
+    "tftclient.exe",
+    "tft client.exe"
+  ],
+  "process_excludes": [
+    "leagueclient.exe",
+    "leagueclientux.exe",
+    "league of legends.exe"
+  ],
+  "_note": "Ajuste os identificadores conforme o cliente TFT exclusivo instalado no Windows (processo/título reais)."
+}

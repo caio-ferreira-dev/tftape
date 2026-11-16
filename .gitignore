@@ -1,0 +1,39 @@
+# Build outputs
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs & recordings
+*.log
+*.mp4
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config overrides
+*.local.json
