@@ -18,7 +18,10 @@ public:
     bool ShouldExit() const { return should_exit_; }
     const std::string& LastOutputPath() const { return last_output_path_; }
 
-    // Para testes/integração: simula resultado da captura real.
+    // Caminho opcional para arquivo de regras de detecção da janela do TFT (JSON).
+    void SetRulesPath(std::string path) { rules_path_ = std::move(path); }
+
+    // Para testes/integração: simula resultado completo do início da gravação.
     void SetStartHookResult(bool ok, std::string message, std::string path = "");
 
 private:
@@ -28,6 +31,7 @@ private:
     bool should_exit_ = false;
     std::string last_error_;
     std::string last_output_path_;
+    std::string rules_path_;
 
     bool hook_set_ = false;
     bool hook_ok_ = true;

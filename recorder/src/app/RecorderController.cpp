@@ -1,5 +1,8 @@
 #include "app/RecorderController.h"
 
+#include <filesystem>
+
+#include "capture/TftWindowFinder.h"
 #include "output/OutputPath.h"
 
 namespace tft {
@@ -50,7 +53,7 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 out.push_back(CommandProtocol::Error("error", err).ToJsonLine());
                 break;
             }
-            // Ponto de integração: aqui o core real localiza janela TFT e inicia pipeline.
+            // Simulação completa (testes/integração controlada).
             if (hook_set_) {
                 if (!hook_ok_) {
                     state_ = RecorderState::Error;
@@ -61,11 +64,37 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 last_output_path_ = hook_path_.empty()
                     ? OutputPath::MakeUniqueMp4Path(cmd.settings.output_dir).string()
                     : hook_path_;
-            } else {
+                state_ = RecorderState::Recording;
+                out.push_back(CommandProtocol::Ok("recording_started", "Gravação iniciada", last_output_path_).ToJsonLine());
+                break;
+            }
+
+            // Detecção da janela do TFT (somente este alvo é permitido).
+            {
+                TftWindowFinder finder;
+                namespace fs = std::filesystem;
+                if (!rules_path_.empty()) {
+                    std::string ferr;
+                    finder.LoadRulesFromFile(rules_path_, &ferr);
+                } else {
+                    const char* defaults[] = {"tft_window_rules.json", "config/tft_window_rules.json", "recorder/config/tft_window_rules.json"};
+                    for (const char* p : defaults) {
+                        if (fs::exists(p)) { finder.LoadRulesFromFile(p, nullptr); break; }
+                    }
+                }
+                auto match = finder.Find();
+                if (match.status != MatchStatus::Matched) {
+                    state_ = RecorderState::Error;
+                    last_error_ = match.reason;
+                    out.push_back(CommandProtocol::Error("error", match.reason).ToJsonLine());
+                    break;
+                }
+                // TODO: iniciar pipeline real de captura/áudio/encode para match.window->handle_id.
                 last_output_path_ = OutputPath::MakeUniqueMp4Path(cmd.settings.output_dir).string();
             }
+
             state_ = RecorderState::Recording;
-            out.push_back(CommandProtocol::Ok("recording_started", "Gravação iniciada", last_output_path_).ToJsonLine());
+            out.push_back(CommandProtocol::Ok("recording_started", "Gravação iniciada (janela do TFT detectada)", last_output_path_).ToJsonLine());
             break;
         }
         case CommandType::Stop:
