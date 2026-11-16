@@ -13,7 +13,7 @@ TEST(RecorderState, StartStopTransitions) {
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(true, "ok", (dir / "out.mp4").string());
-    auto r1 = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.string() + "\",\"resolution\":\"720p\",\"fps\":\"30\"}");
+    auto r1 = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\",\"resolution\":\"720p\",\"fps\":\"30\"}");
     ASSERT_FALSE(r1.empty());
     EXPECT_EQ(c.GetState(), RecorderState::Recording);
     auto r2 = c.HandleLine("{\"cmd\":\"stop\"}");
@@ -27,8 +27,8 @@ TEST(RecorderState, RejectsStartWhenAlreadyRecording) {
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(true, "ok", (dir / "out.mp4").string());
-    c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.string() + "\"}");
-    auto r = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.string() + "\"}");
+    c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
+    auto r = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
     ASSERT_FALSE(r.empty());
     EXPECT_NE(r[0].find("\"ok\":false"), std::string::npos);
     EXPECT_EQ(c.GetState(), RecorderState::Recording);
@@ -48,7 +48,7 @@ TEST(RecorderState, ReportsErrorOnFailedStart) {
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(false, "Janela do TFT não encontrada");
-    auto r = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.string() + "\"}");
+    auto r = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
     ASSERT_FALSE(r.empty());
     EXPECT_NE(r[0].find("Janela do TFT"), std::string::npos);
     EXPECT_EQ(c.GetState(), RecorderState::Error);
