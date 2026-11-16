@@ -24,6 +24,12 @@ struct WindowRuleConfig {
     std::vector<std::string> process_excludes{
         "leagueclient.exe", "leagueclientux.exe", "league of legends.exe"
     };
+
+    // Carrega regras de um JSON simples com arrays de strings:
+    // {"title_contains":[...],"process_candidates":[...],"process_excludes":[...]}
+    // Campos ausentes mantêm os valores atuais (padrão). Retorna false se o arquivo não puder ser lido.
+    static bool LoadFromFile(const std::string& path, WindowRuleConfig& out, std::string* error = nullptr);
+    static bool ParseJson(const std::string& json, WindowRuleConfig& out, std::string* error = nullptr);
 };
 
 enum class MatchStatus { Matched, NoCandidate, Ambiguous, NotCapturable };
@@ -43,6 +49,7 @@ public:
 
     bool IsExcluded(const WindowInfo& w) const;
     bool IsCandidate(const WindowInfo& w) const;
+    const WindowRuleConfig& GetConfig() const { return config_; }
 
 private:
     WindowRuleConfig config_;
