@@ -6,7 +6,7 @@
 
 ## Componentes principais
 - **Capture**: detecta a janela do TFT por regras configuráveis e captura apenas essa janela (WGC no Windows).
-- **Audio**: captura áudio do processo do jogo (padrão) e opcionalmente loopback do sistema e microfone; realiza mixagem e sincronização.
+- **Audio**: captura áudio do jogo isolado por processo via WASAPI process loopback (`PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE`, Windows 10 build 20348+); o toggle "outras janelas/sistema" usa o mesmo mecanismo no modo `EXCLUDE_TARGET_PROCESS_TREE` (evita duplicar o áudio do jogo) e o microfone usa o endpoint de captura padrão. Se o isolamento por processo não estiver disponível, cada fonte cai para loopback do dispositivo padrão (pode incluir áudio de outras janelas). Todo o áudio é convertido pelo engine para PCM 16-bit/48 kHz/estéreo e depois codificado em AAC.
 - **Encode/Mux**: H.264 + AAC em container MP4 (Media Foundation no Windows), com perfis 720p/1080p e 30/60 fps.
 - **Output**: valida pasta, gera nomes únicos `.mp4` e garante finalização segura do arquivo.
 - **Protocol/App**: máquina de estados da gravação e contrato de comandos/eventos com a UI.
