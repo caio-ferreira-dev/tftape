@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Microsoft.UI.Dispatching;
 using TftVodRecorder.Ui.Models;
 using TftVodRecorder.Ui.Services;
 
@@ -20,6 +21,7 @@ public sealed class RelayCommand : ICommand
 public sealed class RecorderViewModel : INotifyPropertyChanged
 {
     private readonly IRecorderService _recorder;
+    private readonly DispatcherQueue _dispatcher;
     private bool _isRecording;
     private string _status = "Pronto";
     private string _outputDirectory = string.Empty;
@@ -34,6 +36,7 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     public RecorderViewModel(IRecorderService recorder)
     {
         _recorder = recorder;
+        _dispatcher = DispatcherQueue.GetForCurrentThread();
         _recorder.OnEvent += OnRecorderEvent;
         StartCommand = new RelayCommand(StartAsync, () => !IsRecording && !string.IsNullOrWhiteSpace(OutputDirectory));
         StopCommand = new RelayCommand(StopAsync, () => IsRecording);
@@ -45,16 +48,16 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     public string[] Resolutions { get; } = { "720p", "1080p" };
     public string[] FpsOptions { get; } = { "30", "60" };
 
-    public bool IsRecording { get => _isRecording; private set { _isRecording = value; OnPropertyChanged(); StartCommand.Raise(); StopCommand.Raise(); } }
-    public string Status { get => _status; private set { _status = value; OnPropertyChanged(); } }
-    public string OutputDirectory { get => _outputDirectory; set { _outputDirectory = value; OnPropertyChanged(); StartCommand.Raise(); } }
-    public string Resolution { get => _resolution; set { _resolution = value; OnPropertyChanged(); } }
-    public string Fps { get => _fps; set { _fps = value; OnPropertyChanged(); } }
-    public bool GameAudio { get => _gameAudio; set { _gameAudio = value; OnPropertyChanged(); } }
-    public bool SystemAudio { get => _systemAudio; set { _systemAudio = value; OnPropertyChanged(); } }
-    public bool Microphone { get => _microphone; set { _microphone = value; OnPropertyChanged(); } }
-    public string LastFile { get => _lastFile; private set { _lastFile = value; OnPropertyChanged(); } }
-    public string Error { get => _error; private set { _error = value; OnPropertyChanged(); } }
+    public bool IsRecording { get => _isRecording; private set { if (_isRecording == value) return; _isRecording = value; OnPropertyChanged(); StartCommand.Raise(); StopCommand.Raise(); } }
+    public string Status { get => _status; private set { if (_status == value) return; _status = value; OnPropertyChanged(); } }
+    public string OutputDirectory { get => _outputDirectory; set { if (_outputDirectory == value) return; _outputDirectory = value; OnPropertyChanged(); StartCommand.Raise(); } }
+    public string Resolution { get => _resolution; set { if (_resolution == value) return; _resolution = value; OnPropertyChanged(); } }
+    public string Fps { get => _fps; set { if (_fps == value) return; _fps = value; OnPropertyChanged(); } }
+    public bool GameAudio { get => _gameAudio; set { if (_gameAudio == value) return; _gameAudio = value; OnPropertyChanged(); } }
+    public bool SystemAudio { get => _systemAudio; set { if (_systemAudio == value) return; _systemAudio = value; OnPropertyChanged(); } }
+    public bool Microphone { get => _microphone; set { if (_microphone == value) return; _microphone = value; OnPropertyChanged(); } }
+    public string LastFile { get => _lastFile; private set { if (_lastFile == value) return; _lastFile = value; OnPropertyChanged(); } }
+    public string Error { get => _error; private set { if (_error == value) return; _error = value; OnPropertyChanged(); } }
 
     public async Task StartAsync()
     {
@@ -69,20 +72,45 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
             SystemAudio = SystemAudio,
             Microphone = Microphone
         };
-        await _recorder.StartAsync(options);
+        try { await _recorder.StartAsync(options); }
+        catch (Exception ex) { IsRecording = false; Status = "Erro"; Error = ex.Message; }
     }
 
     public async Task StopAsync()
     {
         Status = "Parando...";
-        await _recorder.StopAsync();
+        try { await _recorder.StopAsync(); }
+        catch (Exception ex) { Status = "Erro"; Error = ex.Message; }
     }
 
     private void OnRecorderEvent(RecorderEvent e)
     {
-        if (e.Name == "recording_started" && e.Ok) { IsRecording = true; Status = "Gravando (TFT)"; LastFile = e.Path ?? ""; }
-        else if (e.Name == "recording_stopped") { IsRecording = false; Status = "Pronto"; if (!string.IsNullOrEmpty(e.Path)) LastFile = e.Path; }
-        else if (!e.Ok) { IsRecording = false; Status = "Erro"; Error = e.Message; }
+        if (_dispatcher == null) { ApplyEvent(e); return; }
+        if (_dispatcher.HasThreadAccess) ApplyEvent(e);
+        else _dispatcher.TryEnqueue(() => ApplyEvent(e));
+    }
+
+    private void ApplyEvent(RecorderEvent e)
+    {
+        if (e.Name == "recording_started" && e.Ok)
+        {
+            IsRecording = true;
+            Status = "Gravando (TFT)";
+            LastFile = e.Path ?? "";
+            Error = string.Empty;
+        }
+        else if (e.Name == "recording_stopped")
+        {
+            IsRecording = false;
+            Status = "Pronto - gravação finalizada";
+            if (!string.IsNullOrEmpty(e.Path)) LastFile = e.Path;
+        }
+        else if (!e.Ok)
+        {
+            IsRecording = false;
+            Status = "Erro";
+            Error = e.Message;
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

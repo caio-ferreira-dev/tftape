@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -8,10 +9,14 @@
 
 namespace tft {
 
+class RecordingSession;
 enum class RecorderState { Idle, Recording, Stopping, Error };
 
 class RecorderController {
 public:
+    RecorderController();
+    ~RecorderController();
+
     std::vector<std::string> HandleLine(const std::string& line);
 
     RecorderState GetState() const { return state_; }
@@ -32,6 +37,7 @@ private:
     std::string last_error_;
     std::string last_output_path_;
     std::string rules_path_;
+    std::unique_ptr<RecordingSession> session_;
 
     bool hook_set_ = false;
     bool hook_ok_ = true;

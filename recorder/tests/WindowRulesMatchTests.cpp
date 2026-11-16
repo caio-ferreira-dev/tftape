@@ -33,7 +33,7 @@ TEST(WindowRulesMatch, ReturnsAmbiguousOnMultipleCandidates) {
     WindowRules rules;
     std::vector<WindowInfo> wins{
         {"Teamfight Tactics", "TftClient.exe", "", true, 1920, 1080, 1},
-        {"TFT", "tft.exe", "", true, 1280, 720, 2},
+        {"Teamfight Tactics", "TftClient-Win64-Shipping.exe", "", true, 1280, 720, 2},
     };
     auto r = rules.SelectTftWindow(wins);
     EXPECT_EQ(r.status, MatchStatus::Ambiguous);

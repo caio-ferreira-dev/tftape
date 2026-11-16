@@ -15,12 +15,13 @@ struct WindowInfo {
     int width = 0;
     int height = 0;
     unsigned long long handle_id = 0; // identificador opaco (HWND em Windows)
+    unsigned long process_id = 0;
 };
 
 struct WindowRuleConfig {
     std::vector<std::string> title_contains{ "teamfight tactics", "tft" };
     std::vector<std::string> process_candidates{
-        "teamfight tactics.exe", "tft.exe", "tftclient.exe", "tft client.exe"
+        "tftclient-win64-shipping.exe", "tftclient.exe", "tftclient", "teamfight tactics.exe", "tft client.exe"
     };
     std::vector<std::string> process_excludes{
         "leagueclient.exe", "leagueclientux.exe", "league of legends.exe"

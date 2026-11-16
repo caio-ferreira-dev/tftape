@@ -11,8 +11,15 @@ add_library(recorder_core
   src/output/RecordingSettings.cpp
   src/capture/WindowRules.cpp
   src/capture/TftWindowFinder.cpp
+  src/capture/WgcCaptureSource.cpp
   src/app/CommandProtocol.cpp
   src/app/RecorderController.cpp
+  src/app/RecordingSession.cpp
+  src/encode/MfMp4Writer.cpp
+  src/audio/AudioMixer.cpp
+  src/audio/WasapiAppLoopbackSource.cpp
+  src/audio/WasapiSystemLoopbackSource.cpp
+  src/audio/WasapiMicSource.cpp
 )
 
 target_include_directories(recorder_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -21,7 +28,7 @@ add_executable(recorder src/main.cpp)
 target_link_libraries(recorder PRIVATE recorder_core)
 
 if (WIN32)
-  target_link_libraries(recorder_core PUBLIC user32 psapi mfplat mfreadwrite mfuuid mf windowscodecs d3d11 dxgi runtimeobject)
+  target_link_libraries(recorder_core PUBLIC user32 psapi ole32 oleaut32 mfplat mfreadwrite mfuuid mf evr d3d11 dxgi runtimeobject windowsapp)
   target_compile_definitions(recorder_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
