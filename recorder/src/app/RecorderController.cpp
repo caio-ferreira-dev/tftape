@@ -2,10 +2,14 @@
 
 #include <filesystem>
 
+#include "app/RecordingSession.h"
 #include "capture/TftWindowFinder.h"
 #include "output/OutputPath.h"
 
 namespace tft {
+
+RecorderController::RecorderController() = default;
+RecorderController::~RecorderController() = default;
 
 void RecorderController::SetStartHookResult(bool ok, std::string message, std::string path) {
     hook_set_ = true;
@@ -83,14 +87,23 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                     }
                 }
                 auto match = finder.Find();
-                if (match.status != MatchStatus::Matched) {
+                if (match.status != MatchStatus::Matched || !match.window) {
                     state_ = RecorderState::Error;
                     last_error_ = match.reason;
                     out.push_back(CommandProtocol::Error("error", match.reason).ToJsonLine());
                     break;
                 }
-                // TODO: iniciar pipeline real de captura/áudio/encode para match.window->handle_id.
-                last_output_path_ = OutputPath::MakeUniqueMp4Path(cmd.settings.output_dir).string();
+                session_ = std::make_unique<RecordingSession>();
+                std::string serr;
+                void* hwnd = reinterpret_cast<void*>(static_cast<uintptr_t>(match.window->handle_id));
+                if (!session_->Start(cmd.settings, hwnd, match.window->process_id, serr)) {
+                    state_ = RecorderState::Error;
+                    last_error_ = serr;
+                    session_.reset();
+                    out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
+                    break;
+                }
+                last_output_path_ = session_->OutputPath();
             }
 
             state_ = RecorderState::Recording;
@@ -103,7 +116,17 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 break;
             }
             state_ = RecorderState::Stopping;
-            // implementação real: parar captura, flush/mux finalize, fechar arquivo
+            if (session_) {
+                std::string serr;
+                if (!session_->Stop(serr)) {
+                    state_ = RecorderState::Error;
+                    last_error_ = serr;
+                    out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
+                    session_.reset();
+                    break;
+                }
+                session_.reset();
+            }
             state_ = RecorderState::Idle;
             out.push_back(CommandProtocol::Ok("recording_stopped", "Gravação finalizada", last_output_path_).ToJsonLine());
             break;

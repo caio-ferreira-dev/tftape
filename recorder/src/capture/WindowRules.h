@@ -15,6 +15,7 @@ struct WindowInfo {
     int width = 0;
     int height = 0;
     unsigned long long handle_id = 0; // identificador opaco (HWND em Windows)
+    unsigned long process_id = 0;
 };
 
 struct WindowRuleConfig {

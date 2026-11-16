@@ -65,6 +65,7 @@ BOOL CALLBACK EnumProc(HWND hwnd, LPARAM lparam) {
     info.width = rc.right - rc.left;
     info.height = rc.bottom - rc.top;
     info.handle_id = reinterpret_cast<unsigned long long>(hwnd);
+    info.process_id = pid;
     if (!info.title.empty() || !info.process_name.empty()) {
         list->push_back(std::move(info));
     }
