@@ -4,10 +4,12 @@
 
 namespace tft {
 
-// Captura loopback do processo do jogo (padrão). Windows: WASAPI (process loopback quando disponível).
+// Captura áudio associado ao jogo (padrão). Ideal: loopback por processo (WASAPI process loopback).
+// Fallback atual: loopback do endpoint de renderização padrão para garantir captura funcional.
 class WasapiAppLoopbackSource : public IAudioSource {
 public:
     explicit WasapiAppLoopbackSource(unsigned long process_id = 0);
+    ~WasapiAppLoopbackSource() override;
     bool Start() override;
     void Stop() override;
     size_t Read(uint8_t* dst, size_t max_bytes) override;
@@ -19,9 +21,8 @@ private:
     bool active_ = false;
     AudioFormat fmt_{48000, 2, 16};
 #if defined(_WIN32)
-    void* audio_client_ = nullptr;
-    void* capture_client_ = nullptr;
-    void* mm_device_ = nullptr;
+    struct Impl;
+    Impl* impl_ = nullptr;
 #endif
 };
 } // namespace tft
