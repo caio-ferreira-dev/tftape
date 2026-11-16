@@ -162,6 +162,10 @@ bool MfMp4Writer::WriteAudio(const AudioSamples& samples) {
     MFCreateSample(&sample);
     sample->AddBuffer(buffer.Get());
     sample->SetSampleTime(samples.timestamp_100ns);
+    // duração baseada em PCM 16-bit estéreo 48kHz (192000 bytes/s)
+    LONGLONG duration = (LONGLONG)samples.size_bytes * 10'000'000LL / (48000LL * 2 * 2);
+    if (duration <= 0) duration = 100000; // 10ms
+    sample->SetSampleDuration(duration);
     hr = writer->WriteSample(audio_stream_index_, sample.Get());
     if (FAILED(hr)) { last_error_ = "WriteSample(audio) falhou"; return false; }
     return true;

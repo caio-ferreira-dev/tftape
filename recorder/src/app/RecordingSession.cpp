@@ -116,38 +116,45 @@ bool RecordingSession::Stop(std::string& error) {
 }
 
 void RecordingSession::RunLoop() {
-    auto profile = settings_.ToProfile();
-    const int64_t frameDur = 10'000'000LL / (profile.fps > 0 ? profile.fps : 30);
-    const int64_t audioChunk = 10'000'000LL / 100; // 10ms
-    std::vector<uint8_t> bgra, nv12;
-    std::vector<uint8_t> audioBuf(48000 * 2 * 2 / 100); // 10ms PCM16 stereo 48k
+    try {
+        auto profile = settings_.ToProfile();
+        const int64_t frameDur = 10'000'000LL / (profile.fps > 0 ? profile.fps : 30);
+        const int64_t audioChunk = 10'000'000LL / 100; // 10ms
+        std::vector<uint8_t> bgra, nv12, audioBuf(48000 * 2 * 2 / 100);
 
-    while (!stop_requested_) {
-        int64_t now = Now100ns() - start_time_100ns_;
-        if (now - last_video_100ns_ >= frameDur) {
-            last_video_100ns_ += frameDur;
-            if (last_video_100ns_ < now - frameDur) last_video_100ns_ = now; // evitar drift grande
-            WriteVideoTick(last_video_100ns_);
+        while (!stop_requested_) {
+            int64_t now = Now100ns() - start_time_100ns_;
+
+            if (now - last_video_100ns_ >= frameDur) {
+                last_video_100ns_ += frameDur;
+                if (last_video_100ns_ < now - frameDur) last_video_100ns_ = now; // evita acúmulo grande
+                WriteVideoTick(last_video_100ns_, bgra, nv12);
+            }
+
+            if (now - last_audio_100ns_ >= audioChunk) {
+                last_audio_100ns_ += audioChunk;
+                // evita rajadas de catch-up de áudio (causa ruído/estalos/dessincronia)
+                if (last_audio_100ns_ < now - audioChunk * 2) last_audio_100ns_ = now - audioChunk;
+                WriteAudioTick(last_audio_100ns_, audioBuf);
+            }
+
+            Sleep(1);
         }
-        if (now - last_audio_100ns_ >= audioChunk) {
-            last_audio_100ns_ += audioChunk;
-            WriteAudioTick(last_audio_100ns_);
-        }
-        Sleep(1);
+    } catch (...) {
+        // evita término silencioso da thread; falhas de escrita serão refletidas na finalização/uso
     }
 }
 
-bool RecordingSession::WriteVideoTick(int64_t now_100ns) {
+bool RecordingSession::WriteVideoTick(int64_t now_100ns, std::vector<uint8_t>& bgra, std::vector<uint8_t>& nv12) {
     WgcFrame wf{};
     if (!capture_.AcquireTexture(wf) || !wf.texture) return false;
     auto* dev = reinterpret_cast<ID3D11Device*>(capture_.GetD3DDevice());
     if (!dev) return false;
     ComPtr<ID3D11DeviceContext> ctx; dev->GetImmediateContext(&ctx);
     auto* tex = reinterpret_cast<ID3D11Texture2D*>(wf.texture);
-    std::vector<uint8_t> bgra; int w=0,h=0,stride=0;
+    int w = 0, h = 0, stride = 0;
     if (!ReadbackTextureBGRA(dev, ctx.Get(), tex, bgra, w, h, stride)) return false;
     auto profile = settings_.ToProfile();
-    std::vector<uint8_t> nv12;
     BgraToNv12(bgra.data(), w, h, stride, nv12, profile.width, profile.height);
     VideoFrameData vfd{};
     vfd.data = nv12.data();
@@ -156,8 +163,7 @@ bool RecordingSession::WriteVideoTick(int64_t now_100ns) {
     return writer_.WriteVideoFrame(vfd);
 }
 
-void RecordingSession::WriteAudioTick(int64_t now_100ns) {
-    std::vector<uint8_t> buf(48000 * 2 * 2 / 100); // 10ms
+void RecordingSession::WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& buf) {
     mixer_.ReadMixed(buf.data(), buf.size());
     AudioSamples as{};
     as.data = buf.data();
@@ -170,8 +176,8 @@ void RecordingSession::WriteAudioTick(int64_t now_100ns) {
 bool RecordingSession::Start(const RecordingSettings&, void*, unsigned long, std::string& error) { error = "Gravação suportada apenas no Windows"; return false; }
 bool RecordingSession::Stop(std::string&) { return true; }
 void RecordingSession::RunLoop() {}
-bool RecordingSession::WriteVideoTick(int64_t) { return false; }
-void RecordingSession::WriteAudioTick(int64_t) {}
+bool RecordingSession::WriteVideoTick(int64_t, std::vector<uint8_t>&, std::vector<uint8_t>&) { return false; }
+void RecordingSession::WriteAudioTick(int64_t, std::vector<uint8_t>&) {}
 #endif
 
 } // namespace tft

@@ -25,8 +25,8 @@ public:
 
 private:
     void RunLoop();
-    bool WriteVideoTick(int64_t now_100ns);
-    void WriteAudioTick(int64_t now_100ns);
+    bool WriteVideoTick(int64_t now_100ns, std::vector<uint8_t>& bgra, std::vector<uint8_t>& nv12);
+    void WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& buf);
 
     std::atomic<bool> running_{false};
     std::atomic<bool> stop_requested_{false};
