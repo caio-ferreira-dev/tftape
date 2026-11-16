@@ -29,6 +29,28 @@ namespace WGD3D = winrt::Windows::Graphics::DirectX::Direct3D11;
 
 namespace tft {
 
+namespace {
+// IGraphicsCaptureSession3 (Windows 11 22H2+) expõe IsBorderRequired e permite remover a
+// borda amarela de captura em apps Win32 não empacotados. Declaramos a interface via ABI
+// para não depender da versão do Windows SDK instalada no build.
+struct __declspec(uuid("f2cdd966-22ae-5ea1-9596-3a289344c3be")) IGraphicsCaptureSession3
+    : ::IInspectable {
+    virtual HRESULT STDMETHODCALLTYPE get_IsBorderRequired(boolean* value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE put_IsBorderRequired(boolean value) = 0;
+};
+
+void TryDisableCaptureBorder(const WGC::GraphicsCaptureSession& session) {
+    try {
+        auto* unk = winrt::get_unknown(session);
+        if (!unk) return;
+        Microsoft::WRL::ComPtr<IGraphicsCaptureSession3> s3;
+        // Em versões anteriores a Windows 11 22H2 o QueryInterface falha; borda permanece.
+        if (SUCCEEDED(unk->QueryInterface(IID_PPV_ARGS(&s3))) && s3)
+            s3->put_IsBorderRequired(false);
+    } catch (...) {}
+}
+} // namespace
+
 struct WgcCaptureSource::Impl {
     ComPtr<ID3D11Device> d3dDevice;
     ComPtr<ID3D11DeviceContext> d3dContext;
@@ -103,6 +125,8 @@ bool WgcCaptureSource::Start(void* window_handle) {
     impl_->session = impl_->framePool.CreateCaptureSession(impl_->item);
     // IsBorderRequired/IsCursorCapture podem ser ajustados (Win10/11 variações)
     try { impl_->session.IsCursorCaptureEnabled(false); } catch (...) {}
+    // Remove a borda amarela/limite de captura ao redor da janela (Windows 11 22H2+).
+    TryDisableCaptureBorder(impl_->session);
     impl_->session.StartCapture();
     impl_->running = true;
     return true;
