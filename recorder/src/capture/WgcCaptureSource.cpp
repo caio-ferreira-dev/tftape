@@ -45,8 +45,8 @@ struct WgcCaptureSource::Impl {
 
     static ComPtr<ID3D11Texture2D> GetTextureFromFrame(const WGC::Direct3D11CaptureFrame& frame) {
         auto surface = frame.Surface();
-        auto access = surface.as<IDirect3DDxgiInterfaceAccess>();
         ComPtr<ID3D11Texture2D> tex;
+        auto access = surface.as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
         if (access) access->GetInterface(IID_PPV_ARGS(&tex));
         return tex;
     }
