@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 
+#include "audio/AudioRouting.h"
 #include "audio/WasapiAppLoopbackSource.h"
 #include "audio/WasapiMicSource.h"
 #include "audio/WasapiSystemLoopbackSource.h"
@@ -90,10 +91,39 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
     if (!writer_.Open(output_path_, profile)) { error = writer_.LastError(); capture_.Stop(); return false; }
 
     // Áudio: som do jogo (padrão) + opções
-    if (settings_.audio.game_audio) { game_src_ = std::make_shared<WasapiAppLoopbackSource>(process_id); mixer_.SetGameSource(game_src_); }
-    if (settings_.audio.system_audio) { sys_src_ = std::make_shared<WasapiSystemLoopbackSource>(); mixer_.SetSystemSource(sys_src_); }
-    if (settings_.audio.microphone) { mic_src_ = std::make_shared<WasapiMicSource>(); mixer_.SetMicSource(mic_src_); }
+    const AudioRoutingPlan audio_plan = PlanAudioRouting(settings_.audio, process_id);
+    std::shared_ptr<WasapiAppLoopbackSource> game_source;
+    std::shared_ptr<WasapiSystemLoopbackSource> system_source;
+    if (audio_plan.game) {
+        game_source = std::make_shared<WasapiAppLoopbackSource>(audio_plan.game_isolation_pid);
+        game_src_ = game_source;
+        mixer_.SetGameSource(game_src_);
+    }
+    if (audio_plan.system) {
+        system_source = std::make_shared<WasapiSystemLoopbackSource>(audio_plan.system_exclude_pid);
+        sys_src_ = system_source;
+        mixer_.SetSystemSource(sys_src_);
+    }
+    if (audio_plan.mic) {
+        mic_src_ = std::make_shared<WasapiMicSource>();
+        mixer_.SetMicSource(mic_src_);
+    }
     mixer_.Start();
+
+    // Sem isolamento por processo, o loopback do dispositivo já contém todo o áudio:
+    // manter "jogo" e "sistema" juntos duplicaria o sinal (distorção).
+    const AudioSourceSelection selection = DeduplicateAudioSources(
+        audio_plan,
+        game_source && game_source->IsActive(), game_source && game_source->IsProcessIsolated(),
+        system_source && system_source->IsActive(), system_source && system_source->IsProcessIsolated());
+    if (!selection.keep_game) {
+        mixer_.SetGameSource(nullptr);
+        game_src_.reset();
+    }
+    if (!selection.keep_system) {
+        mixer_.SetSystemSource(nullptr);
+        sys_src_.reset();
+    }
 
     start_time_100ns_ = Now100ns();
     last_video_100ns_ = 0;
