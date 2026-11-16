@@ -4,6 +4,10 @@
 
 namespace tft {
 
+// Definido aqui (e não inline no header) porque o unique_ptr<WasapiAudioClient>
+// exige o tipo completo para instanciar o destrutor.
+WasapiMicSource::WasapiMicSource() = default;
+
 WasapiMicSource::~WasapiMicSource() { Stop(); }
 
 bool WasapiMicSource::Start() {

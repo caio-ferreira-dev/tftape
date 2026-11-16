@@ -11,7 +11,7 @@ class WasapiAudioClient;
 /// Microfone (endpoint de captura padrão).
 class WasapiMicSource : public IAudioSource {
 public:
-    WasapiMicSource() = default;
+    WasapiMicSource();
     ~WasapiMicSource() override;
 
     bool Start() override;
