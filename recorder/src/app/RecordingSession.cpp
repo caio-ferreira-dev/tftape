@@ -97,17 +97,18 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
 
     start_time_100ns_ = Now100ns();
     last_video_100ns_ = 0;
-    last_audio_100ns_ = 0;
     running_ = true;
-    thread_ = std::thread([this]() { RunLoop(); });
+    video_thread_ = std::thread([this]() { RunVideoLoop(); });
+    audio_thread_ = std::thread([this]() { RunAudioLoop(); });
     return true;
 }
 
 bool RecordingSession::Stop(std::string& error) {
-    if (!running_ && !thread_.joinable()) return true;
+    if (!running_ && !video_thread_.joinable() && !audio_thread_.joinable()) return true;
     stop_requested_ = true;
     running_ = false;
-    if (thread_.joinable()) thread_.join();
+    if (audio_thread_.joinable()) audio_thread_.join();
+    if (video_thread_.joinable()) video_thread_.join();
     mixer_.Stop();
     capture_.Stop();
     if (!writer_.Finalize()) { error = writer_.LastError(); writer_.Close(); return false; }
@@ -115,33 +116,45 @@ bool RecordingSession::Stop(std::string& error) {
     return true;
 }
 
-void RecordingSession::RunLoop() {
+void RecordingSession::RunVideoLoop() {
     try {
         auto profile = settings_.ToProfile();
         const int64_t frameDur = 10'000'000LL / (profile.fps > 0 ? profile.fps : 30);
-        const int64_t audioChunk = 10'000'000LL / 100; // 10ms
-        std::vector<uint8_t> bgra, nv12, audioBuf(48000 * 2 * 2 / 100);
+        std::vector<uint8_t> bgra, nv12;
 
         while (!stop_requested_) {
             int64_t now = Now100ns() - start_time_100ns_;
-
             if (now - last_video_100ns_ >= frameDur) {
                 last_video_100ns_ += frameDur;
                 if (last_video_100ns_ < now - frameDur) last_video_100ns_ = now; // evita acúmulo grande
                 WriteVideoTick(last_video_100ns_, bgra, nv12);
+            } else {
+                Sleep(1);
             }
-
-            if (now - last_audio_100ns_ >= audioChunk) {
-                last_audio_100ns_ += audioChunk;
-                // evita rajadas de catch-up de áudio (causa ruído/estalos/dessincronia)
-                if (last_audio_100ns_ < now - audioChunk * 2) last_audio_100ns_ = now - audioChunk;
-                WriteAudioTick(last_audio_100ns_, audioBuf);
-            }
-
-            Sleep(1);
         }
     } catch (...) {
-        // evita término silencioso da thread; falhas de escrita serão refletidas na finalização/uso
+        // evita término silencioso da thread
+    }
+}
+
+void RecordingSession::RunAudioLoop() {
+    try {
+        const int64_t audioChunk = 10'000'000LL / 100; // 10ms
+        std::vector<uint8_t> audioBuf(48000 * 2 * 2 / 100);
+        int64_t last_audio = 0;
+        while (!stop_requested_) {
+            int64_t now = Now100ns() - start_time_100ns_;
+            if (now - last_audio >= audioChunk) {
+                last_audio += audioChunk;
+                // limita catch-up para evitar rajadas (ruído/estalos) sob carga
+                if (last_audio < now - audioChunk * 2) last_audio = now - audioChunk;
+                WriteAudioTick(last_audio, audioBuf);
+            } else {
+                Sleep(1);
+            }
+        }
+    } catch (...) {
+        // evita término silencioso da thread
     }
 }
 
@@ -175,7 +188,8 @@ void RecordingSession::WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& b
 #else
 bool RecordingSession::Start(const RecordingSettings&, void*, unsigned long, std::string& error) { error = "Gravação suportada apenas no Windows"; return false; }
 bool RecordingSession::Stop(std::string&) { return true; }
-void RecordingSession::RunLoop() {}
+void RecordingSession::RunVideoLoop() {}
+void RecordingSession::RunAudioLoop() {}
 bool RecordingSession::WriteVideoTick(int64_t, std::vector<uint8_t>&, std::vector<uint8_t>&) { return false; }
 void RecordingSession::WriteAudioTick(int64_t, std::vector<uint8_t>&) {}
 #endif

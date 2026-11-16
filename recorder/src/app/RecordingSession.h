@@ -24,13 +24,15 @@ public:
     const std::string& OutputPath() const { return output_path_; }
 
 private:
-    void RunLoop();
+    void RunVideoLoop();
+    void RunAudioLoop();
     bool WriteVideoTick(int64_t now_100ns, std::vector<uint8_t>& bgra, std::vector<uint8_t>& nv12);
     void WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& buf);
 
     std::atomic<bool> running_{false};
     std::atomic<bool> stop_requested_{false};
-    std::thread thread_;
+    std::thread video_thread_;
+    std::thread audio_thread_;
     RecordingSettings settings_{};
     std::string output_path_;
 
@@ -43,7 +45,6 @@ private:
 
     int64_t start_time_100ns_ = 0;
     int64_t last_video_100ns_ = 0;
-    int64_t last_audio_100ns_ = 0;
     std::string last_error_;
 };
 
