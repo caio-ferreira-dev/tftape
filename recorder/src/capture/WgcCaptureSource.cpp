@@ -45,9 +45,9 @@ struct WgcCaptureSource::Impl {
 
     static ComPtr<ID3D11Texture2D> GetTextureFromFrame(const WGC::Direct3D11CaptureFrame& frame) {
         auto surface = frame.Surface();
-        auto access = surface.as<Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
+        auto access = surface.as<IDirect3DDxgiInterfaceAccess>();
         ComPtr<ID3D11Texture2D> tex;
-        access->GetInterface(IID_PPV_ARGS(&tex));
+        if (access) access->GetInterface(IID_PPV_ARGS(&tex));
         return tex;
     }
 };
@@ -75,11 +75,11 @@ bool WgcCaptureSource::Start(void* window_handle) {
     ComPtr<IInspectable> inspectable;
     hr = CreateDirect3D11DeviceFromDXGIDevice(dxgi.Get(), &inspectable);
     if (FAILED(hr)) return false;
-    impl_->device = inspectable.as<winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice>();
+    winrt::copy_from_abi(impl_->device, inspectable.Get());
 
     // GraphicsCaptureItem a partir do HWND
     auto interop = winrt::get_activation_factory<WGC::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
-    hr = interop->CreateForWindow(hwnd, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
+    hr = interop->CreateForWindow(hwnd, winrt::guid_of<WGC::IGraphicsCaptureItem>(),
                                   winrt::put_abi(impl_->item));
     if (FAILED(hr)) return false;
 
