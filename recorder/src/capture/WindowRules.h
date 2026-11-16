@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -36,7 +37,7 @@ enum class MatchStatus { Matched, NoCandidate, Ambiguous, NotCapturable };
 
 struct MatchResult {
     MatchStatus status = MatchStatus::NoCandidate;
-    const WindowInfo* window = nullptr; // aponta para elemento do vetor de entrada
+    std::optional<WindowInfo> window; // cópia da janela selecionada (quando Matched)
     std::string reason;
 };
 

@@ -124,7 +124,7 @@ MatchResult WindowRules::SelectTftWindow(const std::vector<WindowInfo>& windows)
         if (IsCandidate(w)) matches.push_back(&w);
     }
     if (matches.empty()) {
-        return {MatchStatus::NoCandidate, nullptr, "Janela do TFT não encontrada"};
+        return {MatchStatus::NoCandidate, std::nullopt, "Janela do TFT não encontrada"};
     }
     // preferir candidatos com processo correspondente (mais forte que título)
     std::vector<const WindowInfo*> strong;
@@ -139,13 +139,13 @@ MatchResult WindowRules::SelectTftWindow(const std::vector<WindowInfo>& windows)
     }
     const auto& pool = strong.empty() ? matches : strong;
     if (pool.size() > 1) {
-        return {MatchStatus::Ambiguous, nullptr, "Múltiplas janelas candidatas ao TFT"};
+        return {MatchStatus::Ambiguous, std::nullopt, "Múltiplas janelas candidatas ao TFT"};
     }
     const WindowInfo* chosen = pool.front();
     if (chosen->width <= 0 || chosen->height <= 0) {
-        return {MatchStatus::NotCapturable, nullptr, "Janela do TFT sem dimensões válidas"};
+        return {MatchStatus::NotCapturable, std::nullopt, "Janela do TFT sem dimensões válidas"};
     }
-    return {MatchStatus::Matched, chosen, "OK"};
+    return {MatchStatus::Matched, *chosen, "OK"};
 }
 
 } // namespace tft

@@ -11,7 +11,7 @@ TEST(WindowRulesMatch, MatchesTftClientByProcess) {
     std::vector<WindowInfo> wins{{"Teamfight Tactics", "TftClient.exe", "", true, 1920, 1080, 1}};
     auto r = rules.SelectTftWindow(wins);
     EXPECT_EQ(r.status, MatchStatus::Matched);
-    ASSERT_NE(r.window, nullptr);
+    ASSERT_TRUE(r.window.has_value());
     EXPECT_EQ(r.window->handle_id, 1u);
 }
 
