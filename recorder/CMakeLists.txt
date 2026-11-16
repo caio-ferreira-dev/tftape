@@ -17,6 +17,9 @@ add_library(recorder_core
   src/app/RecordingSession.cpp
   src/encode/MfMp4Writer.cpp
   src/audio/AudioMixer.cpp
+  src/audio/AudioRouting.cpp
+  src/audio/PcmStreamBuffer.cpp
+  src/audio/WasapiAudioClient.cpp
   src/audio/WasapiAppLoopbackSource.cpp
   src/audio/WasapiSystemLoopbackSource.cpp
   src/audio/WasapiMicSource.cpp
@@ -28,7 +31,7 @@ add_executable(recorder src/main.cpp)
 target_link_libraries(recorder PRIVATE recorder_core)
 
 if (WIN32)
-  target_link_libraries(recorder_core PUBLIC user32 psapi ole32 oleaut32 mfplat mfreadwrite mfuuid mf evr d3d11 dxgi runtimeobject windowsapp)
+  target_link_libraries(recorder_core PUBLIC user32 psapi ole32 oleaut32 mfplat mfreadwrite mfuuid mf evr d3d11 dxgi runtimeobject windowsapp mmdevapi)
   target_compile_definitions(recorder_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
