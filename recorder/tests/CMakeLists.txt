@@ -10,6 +10,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(recorder_tests
   WindowRulesMatchTests.cpp
+  WindowRulesConfigTests.cpp
   OutputPathTests.cpp
   RecordingSettingsTests.cpp
   CommandProtocolTests.cpp

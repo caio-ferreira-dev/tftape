@@ -10,6 +10,7 @@ add_library(recorder_core
   src/output/OutputPath.cpp
   src/output/RecordingSettings.cpp
   src/capture/WindowRules.cpp
+  src/capture/TftWindowFinder.cpp
   src/app/CommandProtocol.cpp
   src/app/RecorderController.cpp
 )
@@ -20,7 +21,7 @@ add_executable(recorder src/main.cpp)
 target_link_libraries(recorder PRIVATE recorder_core)
 
 if (WIN32)
-  target_link_libraries(recorder_core PUBLIC mfplat mfreadwrite mfuuid mf windowscodecs d3d11 dxgi runtimeobject)
+  target_link_libraries(recorder_core PUBLIC user32 psapi mfplat mfreadwrite mfuuid mf windowscodecs d3d11 dxgi runtimeobject)
   target_compile_definitions(recorder_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
