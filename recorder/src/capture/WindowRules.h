@@ -21,7 +21,7 @@ struct WindowInfo {
 struct WindowRuleConfig {
     std::vector<std::string> title_contains{ "teamfight tactics", "tft" };
     std::vector<std::string> process_candidates{
-        "teamfight tactics.exe", "tft.exe", "tftclient.exe", "tft client.exe"
+        "tftclient-win64-shipping.exe", "tftclient.exe", "tftclient", "teamfight tactics.exe", "tft client.exe"
     };
     std::vector<std::string> process_excludes{
         "leagueclient.exe", "leagueclientux.exe", "league of legends.exe"

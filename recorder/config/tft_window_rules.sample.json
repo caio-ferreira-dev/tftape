@@ -1,9 +1,10 @@
 {
   "title_contains": ["teamfight tactics", "tft"],
   "process_candidates": [
-    "teamfight tactics.exe",
-    "tft.exe",
+    "tftclient-win64-shipping.exe",
     "tftclient.exe",
+    "tftclient",
+    "teamfight tactics.exe",
     "tft client.exe"
   ],
   "process_excludes": [
