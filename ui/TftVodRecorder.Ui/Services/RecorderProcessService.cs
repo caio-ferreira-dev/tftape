@@ -53,6 +53,9 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
         var psi = new ProcessStartInfo
         {
             FileName = _recorderPath,
+            // Garante que o core encontre tft_window_rules.json ao lado do próprio executável,
+            // independentemente do diretório de trabalho herdado da UI.
+            WorkingDirectory = Path.GetDirectoryName(_recorderPath) ?? AppContext.BaseDirectory,
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
