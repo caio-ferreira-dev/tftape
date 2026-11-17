@@ -44,18 +44,28 @@ struct EventHandle {
 
 bool HasActiveRenderEndpointImpl() {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE && hr != S_FALSE) return false;
+    // S_FALSE = já inicializado nesta thread; RPC_E_CHANGED_MODE = apartment incompatível.
+    // Só devemos liberar se esta chamada foi que inicializou (S_OK).
+    const bool must_uninitialize = SUCCEEDED(hr) && hr != S_FALSE;
+    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
+        if (must_uninitialize) CoUninitialize();
+        return false;
+    }
 
+    bool found = false;
     ComPtr<IMMDeviceEnumerator> enumerator;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&enumerator));
-    if (FAILED(hr)) return false;
+    if (SUCCEEDED(hr)) {
+        ComPtr<IMMDeviceCollection> devices;
+        hr = enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &devices);
+        if (SUCCEEDED(hr)) {
+            UINT count = 0;
+            found = SUCCEEDED(devices->GetCount(&count)) && count > 0;
+        }
+    }
 
-    ComPtr<IMMDeviceCollection> devices;
-    hr = enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &devices);
-    if (FAILED(hr)) return false;
-
-    UINT count = 0;
-    return SUCCEEDED(devices->GetCount(&count)) && count > 0;
+    if (must_uninitialize) CoUninitialize();
+    return found;
 }
 
 /// Implementação de IActivateAudioInterfaceCompletionHandler usada para aguardar
