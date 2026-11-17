@@ -32,6 +32,7 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     private bool _microphone;
     private string _lastFile = string.Empty;
     private string _error = string.Empty;
+    private string _warning = string.Empty;
 
     public RecorderViewModel(IRecorderService recorder)
     {
@@ -58,10 +59,15 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     public bool Microphone { get => _microphone; set { if (_microphone == value) return; _microphone = value; OnPropertyChanged(); } }
     public string LastFile { get => _lastFile; private set { if (_lastFile == value) return; _lastFile = value; OnPropertyChanged(); } }
     public string Error { get => _error; private set { if (_error == value) return; _error = value; OnPropertyChanged(); } }
+    public string Warning { get => _warning; private set { if (_warning == value) return; _warning = value; OnPropertyChanged(); } }
+
+    /// <summary>Deve ser chamado ao fechar a janela para finalizar o MP4.</summary>
+    public Task ShutdownAsync() => _recorder.ShutdownAsync();
 
     public async Task StartAsync()
     {
         Error = string.Empty;
+        Warning = string.Empty;
         Status = "Detectando janela do TFT...";
         var options = new RecordingOptions
         {
@@ -98,6 +104,11 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
             Status = "Gravando (TFT)";
             LastFile = e.Path ?? "";
             Error = string.Empty;
+        }
+        else if (e.Name == "warning" && e.Ok)
+        {
+            // Fontes opcionais indisponíveis: a gravação segue, mas o usuário é avisado.
+            Warning = e.Message;
         }
         else if (e.Name == "recording_stopped")
         {

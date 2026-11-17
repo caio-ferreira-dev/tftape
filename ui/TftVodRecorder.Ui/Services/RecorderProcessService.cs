@@ -10,7 +10,10 @@ namespace TftVodRecorder.Ui.Services;
 /// </summary>
 public sealed class RecorderProcessService : IRecorderService, IDisposable
 {
+    private const int MaxStderrLines = 20;
     private readonly string _recorderPath;
+    private readonly object _stderrLock = new();
+    private readonly Queue<string> _stderrLines = new();
     private Process? _process;
 
     public RecorderProcessService(string? recorderPath = null)
@@ -22,7 +25,7 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
 
     public async Task StartAsync(RecordingOptions options, CancellationToken ct = default)
     {
-        EnsureProcess();
+        if (!EnsureProcess()) return;
         var cmd = new
         {
             cmd = "start",
@@ -38,18 +41,69 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
 
     public async Task StopAsync(CancellationToken ct = default)
     {
-        if (_process == null || _process.HasExited) return;
         await SendAsync(new { cmd = "stop" }, ct);
     }
 
-    private void EnsureProcess()
+    /// <summary>
+    /// Envia shutdown, aguarda o core finalizar o MP4 e, se não responder, mata a árvore
+    /// de processos. Chamado no fechamento da janela.
+    /// </summary>
+    public async Task ShutdownAsync(CancellationToken ct = default)
     {
-        if (_process != null && !_process.HasExited) return;
+        var process = _process;
+        if (process == null) return;
+        try
+        {
+            if (!process.HasExited)
+            {
+                try
+                {
+                    if (process.StandardInput != null)
+                    {
+                        await process.StandardInput.WriteLineAsync("{\"cmd\":\"shutdown\"}").ConfigureAwait(false);
+                        await process.StandardInput.FlushAsync().ConfigureAwait(false);
+                    }
+                }
+                catch { /* pipe já fechado: segue para o timeout/kill */ }
+
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(TimeSpan.FromSeconds(5));
+                try
+                {
+                    await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    TryKill(process);
+                }
+            }
+        }
+        catch
+        {
+            TryKill(process);
+        }
+        finally
+        {
+            if (ReferenceEquals(_process, process)) _process = null;
+            process.Dispose();
+        }
+    }
+
+    private bool EnsureProcess()
+    {
+        if (_process is { HasExited: false }) return true;
+
+        if (_process != null)
+        {
+            _process.Dispose();
+            _process = null;
+        }
         if (!File.Exists(_recorderPath))
         {
             OnEvent?.Invoke(new RecorderEvent(false, "error", $"recorder.exe não encontrado em: {_recorderPath}"));
-            return;
+            return false;
         }
+
         var psi = new ProcessStartInfo
         {
             FileName = _recorderPath,
@@ -62,51 +116,154 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        _process = Process.Start(psi);
-        if (_process == null) { OnEvent?.Invoke(new RecorderEvent(false, "error", "Falha ao iniciar recorder.exe")); return; }
-        _ = Task.Run(ReadLoopAsync);
+
+        Process? process;
+        try
+        {
+            process = Process.Start(psi);
+        }
+        catch
+        {
+            OnEvent?.Invoke(new RecorderEvent(false, "error", "Falha ao iniciar recorder.exe"));
+            return false;
+        }
+        if (process == null)
+        {
+            OnEvent?.Invoke(new RecorderEvent(false, "error", "Falha ao iniciar recorder.exe"));
+            return false;
+        }
+        _process = process;
+
+        // O core escreve diagnóstico no stderr. Sem drenagem o pipe enche (~4 KB) e
+        // bloqueia o processo, travando também stdin/stdout.
+        try
+        {
+            process.ErrorDataReceived += OnErrorDataReceived;
+            process.BeginErrorReadLine();
+        }
+        catch { /* processo já encerrado: o loop de stdout cuida do erro */ }
+
+        _ = Task.Run(() => ReadLoopAsync(process));
+        return true;
+    }
+
+    private void OnErrorDataReceived(object sender, DataReceivedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Data)) return;
+        lock (_stderrLock)
+        {
+            _stderrLines.Enqueue(e.Data);
+            while (_stderrLines.Count > MaxStderrLines) _stderrLines.Dequeue();
+        }
+    }
+
+    private string RecentStderr()
+    {
+        lock (_stderrLock)
+        {
+            return string.Join(" | ", _stderrLines);
+        }
     }
 
     private async Task SendAsync(object payload, CancellationToken ct)
     {
-        if (_process?.HasExited != false || _process.StandardInput == null)
+        var process = _process;
+        if (process is null || process.HasExited || process.StandardInput == null)
         {
             OnEvent?.Invoke(new RecorderEvent(false, "error", "Processo do gravador não está ativo"));
             return;
         }
         var json = JsonSerializer.Serialize(payload);
-        await _process.StandardInput.WriteLineAsync(json.AsMemory(), ct);
-        await _process.StandardInput.FlushAsync();
+        try
+        {
+            await process.StandardInput.WriteLineAsync(json.AsMemory(), ct).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            OnEvent?.Invoke(new RecorderEvent(false, "error", "Falha ao comunicar com o gravador"));
+        }
     }
 
-    private async Task ReadLoopAsync()
+    private async Task ReadLoopAsync(Process process)
     {
-        if (_process?.StandardOutput == null) return;
-        while (!_process.HasExited)
+        if (process.StandardOutput == null) return;
+        try
         {
-            var line = await _process.StandardOutput.ReadLineAsync();
-            if (line == null) break;
-            try
+            while (!process.HasExited)
             {
-                using var doc = JsonDocument.Parse(line);
-                var root = doc.RootElement;
-                var ok = root.TryGetProperty("ok", out var okp) && okp.GetBoolean();
-                var name = root.TryGetProperty("event", out var np) ? np.GetString() ?? "event" : "event";
-                var msg = root.TryGetProperty("message", out var mp) ? mp.GetString() ?? "" : "";
-                var path = root.TryGetProperty("path", out var pp) ? pp.GetString() : null;
-                OnEvent?.Invoke(new RecorderEvent(ok, name, msg, path));
-            }
-            catch
-            {
-                // ignora linhas não-JSON
+                var line = await process.StandardOutput.ReadLineAsync().ConfigureAwait(false);
+                if (line == null) break;
+                try
+                {
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    var ok = root.TryGetProperty("ok", out var okp) && okp.GetBoolean();
+                    var name = root.TryGetProperty("event", out var np) ? np.GetString() ?? "event" : "event";
+                    var msg = root.TryGetProperty("message", out var mp) ? mp.GetString() ?? "" : "";
+                    var path = root.TryGetProperty("path", out var pp) ? pp.GetString() : null;
+                    OnEvent?.Invoke(new RecorderEvent(ok, name, msg, path));
+                }
+                catch
+                {
+                    // ignora linhas não-JSON
+                }
             }
         }
+        catch
+        {
+            // pipe fechado durante o shutdown
+        }
+
+        try
+        {
+            process.WaitForExit(0);
+            if (process.ExitCode != 0)
+            {
+                var details = RecentStderr();
+                var message = details.Length > 0
+                    ? $"Gravador encerrou com código {process.ExitCode}: {details}"
+                    : $"Gravador encerrou inesperadamente (código {process.ExitCode})";
+                OnEvent?.Invoke(new RecorderEvent(false, "error", message));
+            }
+        }
+        catch
+        {
+            // processo já disposed
+        }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+        catch { }
     }
 
     public void Dispose()
     {
-        try { if (_process?.HasExited == false) { _process.StandardInput.WriteLine("{\"cmd\":\"shutdown\"}"); _process.WaitForExit(1500); } }
-        catch { }
-        _process?.Dispose();
+        var process = _process;
+        _process = null;
+        if (process == null) return;
+        try
+        {
+            if (!process.HasExited)
+            {
+                try
+                {
+                    process.StandardInput?.WriteLine("{\"cmd\":\"shutdown\"}");
+                    process.StandardInput?.Flush();
+                }
+                catch { /* segue para o timeout/kill */ }
+                if (!process.WaitForExit(3000)) TryKill(process);
+            }
+        }
+        catch
+        {
+            TryKill(process);
+        }
+        finally
+        {
+            process.Dispose();
+        }
     }
 }

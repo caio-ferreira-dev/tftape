@@ -22,6 +22,7 @@
                         <TextBlock Text="Status" FontWeight="SemiBold"/>
                         <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" Foreground="{StaticResource Brush.Accent}"/>
                         <TextBlock Text="{x:Bind ViewModel.Error, Mode=OneWay}" Foreground="#FFFF6B6B" TextWrapping="Wrap"/>
+                        <TextBlock Text="{x:Bind ViewModel.Warning, Mode=OneWay}" Foreground="#FFFFD47A" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

@@ -9,11 +9,20 @@ public sealed partial class MainWindow : Window
 {
     public RecorderViewModel ViewModel { get; }
     private readonly FolderPickerService _folderPicker = new();
+    private readonly RecorderProcessService _recorderService = new();
 
     public MainWindow()
     {
-        ViewModel = new RecorderViewModel(new RecorderProcessService());
+        ViewModel = new RecorderViewModel(_recorderService);
         InitializeComponent();
+        Closing += OnClosing;
+    }
+
+    private void OnClosing(object sender, WindowClosingEventArgs args)
+    {
+        // Envia shutdown e aguarda a finalização do MP4 antes de encerrar a UI.
+        // O serviço mata a árvore de processos se o core não responder.
+        _recorderService.Dispose();
     }
 
     private async void OnPickFolder(object sender, RoutedEventArgs e)
