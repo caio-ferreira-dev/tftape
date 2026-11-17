@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using TftVodRecorder.Ui.Models;
 
@@ -114,6 +115,11 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            // O core emite JSON com mensagens em português em UTF-8; sem isso o .NET
+            // usa a code page do console e gera mojibake (ex.: "indisponÃvel").
+            StandardInputEncoding = Encoding.UTF8,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             CreateNoWindow = true
         };
 
