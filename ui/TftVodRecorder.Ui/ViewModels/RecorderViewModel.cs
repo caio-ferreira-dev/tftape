@@ -114,6 +114,8 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
         {
             IsRecording = false;
             Status = "Pronto - gravação finalizada";
+            Warning = string.Empty;
+            Error = string.Empty;
             if (!string.IsNullOrEmpty(e.Path)) LastFile = e.Path;
         }
         else if (!e.Ok)
