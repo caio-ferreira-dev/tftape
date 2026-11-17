@@ -136,7 +136,7 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
             out.push_back(CommandProtocol::Ok("recording_started", "Gravação iniciada (janela do TFT detectada)", last_output_path_).ToJsonLine());
             break;
         }
-        case CommandType::Stop:
+        case CommandType::Stop: {
             if (state_ != RecorderState::Recording) {
                 out.push_back(CommandProtocol::Error("error", "Nenhuma gravação em andamento").ToJsonLine());
                 break;
@@ -149,6 +149,7 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
             }
             out.push_back(CommandProtocol::Ok("recording_stopped", "Gravação finalizada", last_output_path_).ToJsonLine());
             break;
+        }
         case CommandType::Unknown:
         default:
             out.push_back(CommandProtocol::Error("error", "Comando desconhecido").ToJsonLine());
