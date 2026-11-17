@@ -29,6 +29,7 @@ add_library(recorder_core
   src/audio/WasapiAppLoopbackSource.cpp
   src/audio/WasapiSystemLoopbackSource.cpp
   src/audio/WasapiMicSource.cpp
+  src/util/Logger.cpp
 )
 
 target_include_directories(recorder_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
