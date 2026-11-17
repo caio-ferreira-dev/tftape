@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "output/RecordingSettings.h"
 
 namespace tft {
@@ -33,5 +36,16 @@ struct AudioSourceSelection {
 AudioSourceSelection DeduplicateAudioSources(const AudioRoutingPlan& plan,
                                              bool game_active, bool game_isolated,
                                              bool system_active, bool system_isolated);
+
+/// Resultado da checagem pós-start das fontes de áudio.
+struct AudioStartCheck {
+    bool can_record = true;
+    std::string error;               // preenchido apenas quando uma fonte obrigatória falha
+    std::vector<std::string> warnings; // fontes opcionais indisponíveis: seguir sem elas
+};
+
+/// O som do jogo é obrigatório quando solicitado; sistema e microfone são opcionais.
+AudioStartCheck EvaluateAudioStart(const AudioRoutingPlan& plan,
+                                   bool game_active, bool system_active, bool mic_active);
 
 } // namespace tft

@@ -36,4 +36,22 @@ AudioSourceSelection DeduplicateAudioSources(const AudioRoutingPlan& plan,
     return selection;
 }
 
+AudioStartCheck EvaluateAudioStart(const AudioRoutingPlan& plan,
+                                   bool game_active, bool system_active, bool mic_active) {
+    AudioStartCheck check;
+
+    if (plan.game && !game_active) {
+        check.can_record = false;
+        check.error = "Falha ao iniciar o áudio do jogo (fonte obrigatória)";
+        return check;
+    }
+    if (plan.system && !system_active) {
+        check.warnings.push_back("Áudio de outras janelas/sistema indisponível; gravando sem essa fonte.");
+    }
+    if (plan.mic && !mic_active) {
+        check.warnings.push_back("Microfone indisponível; gravando sem essa fonte.");
+    }
+    return check;
+}
+
 } // namespace tft

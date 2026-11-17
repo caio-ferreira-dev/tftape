@@ -77,7 +77,8 @@ bool ReadbackTextureBGRA(ID3D11Device* dev, ID3D11DeviceContext* ctx, ID3D11Text
 }
 } // namespace
 
-bool RecordingSession::Start(const RecordingSettings& settings, void* window_handle, unsigned long process_id, std::string& error) {
+bool RecordingSession::Start(const RecordingSettings& settings, void* window_handle, unsigned long process_id,
+                             std::string& error, std::vector<std::string>* warnings) {
     if (running_) { error = "Sessão já em execução"; return false; }
     settings_ = settings;
     stop_requested_ = false;
@@ -94,6 +95,7 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
     const AudioRoutingPlan audio_plan = PlanAudioRouting(settings_.audio, process_id);
     std::shared_ptr<WasapiAppLoopbackSource> game_source;
     std::shared_ptr<WasapiSystemLoopbackSource> system_source;
+    std::shared_ptr<WasapiMicSource> mic_source;
     if (audio_plan.game) {
         game_source = std::make_shared<WasapiAppLoopbackSource>(audio_plan.game_isolation_pid);
         game_src_ = game_source;
@@ -105,10 +107,31 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
         mixer_.SetSystemSource(sys_src_);
     }
     if (audio_plan.mic) {
-        mic_src_ = std::make_shared<WasapiMicSource>();
+        mic_source = std::make_shared<WasapiMicSource>();
+        mic_src_ = mic_source;
         mixer_.SetMicSource(mic_src_);
     }
     mixer_.Start();
+
+    // O áudio do jogo é obrigatório: nunca gravar silenciosamente sem ele.
+    // Sistema e microfone são opcionais: falhas viram aviso para a UI.
+    const AudioStartCheck audio_check = EvaluateAudioStart(
+        audio_plan,
+        game_source && game_source->IsActive(),
+        system_source && system_source->IsActive(),
+        mic_source && mic_source->IsActive());
+    if (!audio_check.can_record) {
+        error = audio_check.error;
+        mixer_.Stop();
+        mixer_.SetGameSource(nullptr);
+        mixer_.SetSystemSource(nullptr);
+        mixer_.SetMicSource(nullptr);
+        game_src_.reset(); sys_src_.reset(); mic_src_.reset();
+        capture_.Stop();
+        writer_.Abort();
+        return false;
+    }
+    if (warnings) *warnings = audio_check.warnings;
 
     // Sem isolamento por processo, o loopback do dispositivo já contém todo o áudio:
     // manter "jogo" e "sistema" juntos duplicaria o sinal (distorção).
