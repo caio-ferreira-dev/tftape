@@ -19,6 +19,10 @@ public:
 
     std::vector<std::string> HandleLine(const std::string& line);
 
+    /// Encerra a sessão ativa de forma explícita (finaliza o MP4) em stop/shutdown/EOF.
+    /// Chamado também no destrutor como melhor esforço.
+    bool FinalizeActiveRecording(std::string& error);
+
     RecorderState GetState() const { return state_; }
     bool ShouldExit() const { return should_exit_; }
     const std::string& LastOutputPath() const { return last_output_path_; }

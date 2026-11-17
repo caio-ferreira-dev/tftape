@@ -32,12 +32,15 @@ public:
     bool WriteVideoFrame(const VideoFrameData& frame);
     bool WriteAudio(const AudioSamples& samples);
     bool Finalize();
+    /// Libera o sink writer sem finalize (usado quando o start falha e não há arquivo válido).
+    void Abort();
     void Close();
 
     const std::string& LastError() const { return last_error_; }
 
 private:
     bool opened_ = false;
+    bool finalized_ = false;
     std::string last_error_;
 #if defined(_WIN32)
     void* sink_writer_ = nullptr; // IMFSinkWriter*

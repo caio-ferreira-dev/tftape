@@ -9,7 +9,26 @@
 namespace tft {
 
 RecorderController::RecorderController() = default;
-RecorderController::~RecorderController() = default;
+RecorderController::~RecorderController() {
+    std::string ignored;
+    FinalizeActiveRecording(ignored);
+}
+
+bool RecorderController::FinalizeActiveRecording(std::string& error) {
+    if (!session_) {
+        if (state_ == RecorderState::Recording || state_ == RecorderState::Stopping) state_ = RecorderState::Idle;
+        return true;
+    }
+    if (!session_->Stop(error)) {
+        state_ = RecorderState::Error;
+        last_error_ = error;
+        session_.reset();
+        return false;
+    }
+    session_.reset();
+    state_ = RecorderState::Idle;
+    return true;
+}
 
 void RecorderController::SetStartHookResult(bool ok, std::string message, std::string path) {
     hook_set_ = true;
@@ -32,13 +51,16 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
         case CommandType::Ping:
             out.push_back(CommandProtocol::Ok("pong", "alive").ToJsonLine());
             break;
-        case CommandType::Shutdown:
-            if (state_ == RecorderState::Recording) {
-                state_ = RecorderState::Idle; // melhor esforço; implementação real finaliza mux
+        case CommandType::Shutdown: {
+            // Finaliza o mux antes de sair, inclusive se a UI fechar durante a gravação.
+            std::string ferr;
+            if (!FinalizeActiveRecording(ferr)) {
+                out.push_back(CommandProtocol::Error("error", ferr).ToJsonLine());
             }
             should_exit_ = true;
             out.push_back(CommandProtocol::Ok("shutdown", "bye").ToJsonLine());
             break;
+        }
         case CommandType::Start: {
             if (state_ == RecorderState::Recording || state_ == RecorderState::Stopping) {
                 out.push_back(CommandProtocol::Error("error", "Gravação já em andamento").ToJsonLine());
@@ -95,13 +117,17 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 }
                 session_ = std::make_unique<RecordingSession>();
                 std::string serr;
+                std::vector<std::string> warnings;
                 void* hwnd = reinterpret_cast<void*>(static_cast<uintptr_t>(match.window->handle_id));
-                if (!session_->Start(cmd.settings, hwnd, match.window->process_id, serr)) {
+                if (!session_->Start(cmd.settings, hwnd, match.window->process_id, serr, &warnings)) {
                     state_ = RecorderState::Error;
                     last_error_ = serr;
                     session_.reset();
                     out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
                     break;
+                }
+                for (const auto& warning : warnings) {
+                    out.push_back(CommandProtocol::Ok("warning", warning).ToJsonLine());
                 }
                 last_output_path_ = session_->OutputPath();
             }
@@ -116,18 +142,11 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 break;
             }
             state_ = RecorderState::Stopping;
-            if (session_) {
-                std::string serr;
-                if (!session_->Stop(serr)) {
-                    state_ = RecorderState::Error;
-                    last_error_ = serr;
-                    out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
-                    session_.reset();
-                    break;
-                }
-                session_.reset();
+            std::string serr;
+            if (!FinalizeActiveRecording(serr)) {
+                out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
+                break;
             }
-            state_ = RecorderState::Idle;
             out.push_back(CommandProtocol::Ok("recording_stopped", "Gravação finalizada", last_output_path_).ToJsonLine());
             break;
         case CommandType::Unknown:
