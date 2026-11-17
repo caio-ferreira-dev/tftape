@@ -122,6 +122,10 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
         mic_source && mic_source->IsActive());
     if (!audio_check.can_record) {
         error = audio_check.error;
+        // Inclui o motivo específico da fonte do jogo antes de pará-la (Stop limpa o erro).
+        if (game_source && !game_source->LastError().empty()) {
+            error += " - " + game_source->LastError();
+        }
         mixer_.Stop();
         mixer_.SetGameSource(nullptr);
         mixer_.SetSystemSource(nullptr);

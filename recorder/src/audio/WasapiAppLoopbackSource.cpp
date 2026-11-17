@@ -10,6 +10,14 @@ WasapiAppLoopbackSource::~WasapiAppLoopbackSource() { Stop(); }
 
 bool WasapiAppLoopbackSource::Start() {
     Stop();
+
+    // Sem endpoint de reprodução ativo, o loopback (por processo ou do dispositivo)
+    // pode até ativar, mas não entrega áudio: recusamos gravar silenciosamente.
+    if (!WasapiAudioClient::HasActiveRenderEndpoint()) {
+        last_error_ = "Nenhum dispositivo de reprodução de áudio ativo";
+        return false;
+    }
+
     client_ = std::make_unique<WasapiAudioClient>();
 
     // Preferência: isolar apenas o processo do jogo e seus filhos.
@@ -17,6 +25,7 @@ bool WasapiAppLoopbackSource::Start() {
         isolated_ = true;
     } else if (!client_->OpenDefaultRenderLoopback()) {
         // Sem isolamento e sem loopback do dispositivo: áudio do jogo indisponível.
+        last_error_ = "Falha ao iniciar a captura de áudio do jogo";
         client_.reset();
         active_ = false;
         isolated_ = false;
@@ -36,6 +45,7 @@ void WasapiAppLoopbackSource::Stop() {
     }
     active_ = false;
     isolated_ = false;
+    last_error_.clear();
 }
 
 size_t WasapiAppLoopbackSource::Read(uint8_t* dst, size_t max_bytes) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "audio/IAudioSource.h"
 
@@ -27,10 +28,14 @@ public:
     /// true quando o áudio do jogo está isolado por processo (sem som do sistema).
     bool IsProcessIsolated() const { return isolated_; }
 
+    /// Motivo da falha no Start(), para mensagem acionável na UI.
+    const std::string& LastError() const { return last_error_; }
+
 private:
     unsigned long pid_ = 0;
     bool active_ = false;
     bool isolated_ = false;
+    std::string last_error_;
     AudioFormat fmt_{48000, 2, 16};
     std::unique_ptr<WasapiAudioClient> client_;
 };

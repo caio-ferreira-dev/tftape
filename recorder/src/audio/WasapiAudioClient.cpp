@@ -42,6 +42,22 @@ struct EventHandle {
     }
 };
 
+bool HasActiveRenderEndpointImpl() {
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE && hr != S_FALSE) return false;
+
+    ComPtr<IMMDeviceEnumerator> enumerator;
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&enumerator));
+    if (FAILED(hr)) return false;
+
+    ComPtr<IMMDeviceCollection> devices;
+    hr = enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &devices);
+    if (FAILED(hr)) return false;
+
+    UINT count = 0;
+    return SUCCEEDED(devices->GetCount(&count)) && count > 0;
+}
+
 /// Implementação de IActivateAudioInterfaceCompletionHandler usada para aguardar
 /// a ativação assíncrona do cliente de loopback por processo.
 class ActivationHandler final
@@ -213,6 +229,10 @@ bool WasapiAudioClient::OpenCaptureEndpoint() {
     return impl_ && impl_->Open(false, 0, false, true);
 }
 
+bool WasapiAudioClient::HasActiveRenderEndpoint() {
+    return HasActiveRenderEndpointImpl();
+}
+
 void WasapiAudioClient::Close() {
     if (impl_) impl_->Close();
 }
@@ -276,6 +296,7 @@ WasapiAudioClient::~WasapiAudioClient() = default;
 bool WasapiAudioClient::OpenDefaultRenderLoopback() { return false; }
 bool WasapiAudioClient::OpenProcessLoopback(unsigned long, bool) { return false; }
 bool WasapiAudioClient::OpenCaptureEndpoint() { return false; }
+bool WasapiAudioClient::HasActiveRenderEndpoint() { return false; }
 size_t WasapiAudioClient::Read(uint8_t*, size_t) { return 0; }
 void WasapiAudioClient::Close() {}
 bool WasapiAudioClient::IsOpen() const { return false; }
