@@ -38,6 +38,11 @@ Para publicar (também inclui os arquivos do core):
 dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
 ```
 
+## Comportamento
+- Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
+- Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
+- Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
+
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).
 - **Antes de criar uma nova branch:** obter feedback e realizar o merge/aprovação da branch atual na `main`.

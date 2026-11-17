@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "audio/AudioMixer.h"
 #include "capture/WgcCaptureSource.h"
@@ -17,7 +18,9 @@ public:
     RecordingSession() = default;
     ~RecordingSession();
 
-    bool Start(const RecordingSettings& settings, void* window_handle, unsigned long process_id, std::string& error);
+    /// `warnings` recebe avisos de fontes opcionais indisponíveis (a gravação segue).
+    bool Start(const RecordingSettings& settings, void* window_handle, unsigned long process_id,
+               std::string& error, std::vector<std::string>* warnings = nullptr);
     bool Stop(std::string& error);
 
     bool IsRunning() const { return running_.load(); }

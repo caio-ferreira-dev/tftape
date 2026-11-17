@@ -176,13 +176,26 @@ bool MfMp4Writer::Finalize() {
     auto* writer = reinterpret_cast<IMFSinkWriter*>(sink_writer_);
     HRESULT hr = writer->Finalize();
     if (FAILED(hr)) { last_error_ = "Finalize falhou"; return false; }
+    finalized_ = true;
     return true;
+}
+
+void MfMp4Writer::Abort() {
+    if (sink_writer_) {
+        reinterpret_cast<IMFSinkWriter*>(sink_writer_)->Release();
+        sink_writer_ = nullptr;
+    }
+    if (opened_) MFShutdown();
+    opened_ = false;
+    finalized_ = true; // evita que Close() tente finalizar um writer abortado
+    has_audio_ = false;
 }
 
 void MfMp4Writer::Close() {
     if (sink_writer_) {
         auto* writer = reinterpret_cast<IMFSinkWriter*>(sink_writer_);
-        if (opened_) writer->Finalize();
+        // Finalize() e Close() podem ser chamados em sequência; finalizar só uma vez.
+        if (opened_ && !finalized_) Finalize();
         writer->Release();
         sink_writer_ = nullptr;
     }
@@ -190,6 +203,7 @@ void MfMp4Writer::Close() {
         MFShutdown();
     }
     opened_ = false;
+    finalized_ = false;
     has_audio_ = false;
 }
 #else
@@ -197,6 +211,7 @@ bool MfMp4Writer::Open(const std::string&, const VideoProfile&, int, int) { last
 bool MfMp4Writer::WriteVideoFrame(const VideoFrameData&) { return false; }
 bool MfMp4Writer::WriteAudio(const AudioSamples&) { return false; }
 bool MfMp4Writer::Finalize() { return false; }
+void MfMp4Writer::Abort() {}
 void MfMp4Writer::Close() {}
 #endif
 

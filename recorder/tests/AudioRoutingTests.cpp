@@ -160,3 +160,50 @@ TEST(AudioDeduplicationTests, DoesNotKeepInactiveRequestedSource) {
     EXPECT_TRUE(sel.keep_game);
     EXPECT_FALSE(sel.keep_system);
 }
+
+TEST(AudioStartCheckTests, GameAudioFailureBlocksRecording) {
+    AudioOptions audio;
+    const AudioRoutingPlan plan = PlanAudioRouting(audio, 10);
+
+    const AudioStartCheck check = EvaluateAudioStart(plan, /*game=*/false, /*system=*/false, /*mic=*/false);
+
+    EXPECT_FALSE(check.can_record);
+    EXPECT_FALSE(check.error.empty());
+    EXPECT_TRUE(check.warnings.empty());
+}
+
+TEST(AudioStartCheckTests, OptionalSourcesFailAsWarnings) {
+    AudioOptions audio;
+    audio.system_audio = true;
+    audio.microphone = true;
+    const AudioRoutingPlan plan = PlanAudioRouting(audio, 10);
+
+    const AudioStartCheck check = EvaluateAudioStart(plan, /*game=*/true, /*system=*/false, /*mic=*/false);
+
+    EXPECT_TRUE(check.can_record);
+    EXPECT_TRUE(check.error.empty());
+    ASSERT_EQ(check.warnings.size(), 2u);
+}
+
+TEST(AudioStartCheckTests, AllSourcesHealthyHasNoWarnings) {
+    AudioOptions audio;
+    audio.system_audio = true;
+    audio.microphone = true;
+    const AudioRoutingPlan plan = PlanAudioRouting(audio, 10);
+
+    const AudioStartCheck check = EvaluateAudioStart(plan, true, true, true);
+
+    EXPECT_TRUE(check.can_record);
+    EXPECT_TRUE(check.warnings.empty());
+}
+
+TEST(AudioStartCheckTests, DisabledSourcesDoNotWarn) {
+    AudioOptions audio;
+    audio.game_audio = false;
+    const AudioRoutingPlan plan = PlanAudioRouting(audio, 10);
+
+    const AudioStartCheck check = EvaluateAudioStart(plan, false, false, false);
+
+    EXPECT_TRUE(check.can_record);
+    EXPECT_TRUE(check.warnings.empty());
+}

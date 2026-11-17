@@ -29,6 +29,10 @@ public:
     bool OpenProcessLoopback(unsigned long process_id, bool include_process_tree);
     bool OpenCaptureEndpoint();
 
+    /// Existe algum endpoint de reprodução ativo? Usado para recusar uma gravação
+    /// que seria silenciosa quando todos os dispositivos de saída estão desativados.
+    static bool HasActiveRenderEndpoint();
+
     /// Lê amostras disponíveis (até `max_bytes`, múltiplo do block align de 4 bytes).
     /// Retorna a quantidade de bytes preenchidos; 0 se nada disponível.
     size_t Read(uint8_t* dst, size_t max_bytes);
