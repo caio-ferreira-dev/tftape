@@ -4,6 +4,7 @@
 #include <cctype>
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 namespace tft {
 
@@ -80,7 +81,7 @@ bool WindowRuleConfig::LoadFromFile(const std::string& path, WindowRuleConfig& o
 
 WindowRules::WindowRules(WindowRuleConfig config) : config_(std::move(config)) {}
 
-bool WindowRules::IsExcluded(const WindowInfo& w) const {
+std::string WindowRules::ExclusionRule(const WindowInfo& w) const {
     auto p = ToLowerAscii(w.process_name);
     auto t = ToLowerAscii(w.title);
     for (const auto& ex : config_.process_excludes) {
@@ -92,39 +93,63 @@ bool WindowRules::IsExcluded(const WindowInfo& w) const {
             for (const auto& c : config_.process_candidates) {
                 if (p.find(ToLowerAscii(c)) != std::string::npos) tft_signal = true;
             }
-            if (!tft_signal) return true;
+            if (!tft_signal) return "process_excludes=\"" + ex + "\"";
         }
     }
     // exclusão por título típico de LoL (não TFT)
     if (ContainsInsensitive(w.title, "league of legends") && !ContainsInsensitive(w.title, "teamfight")) {
-        return true;
+        return "title=league of legends (sem teamfight)";
     }
-    return false;
+    return {};
 }
 
-bool WindowRules::IsCandidate(const WindowInfo& w) const {
-    if (IsExcluded(w)) return false;
+std::string WindowRules::CandidateRule(const WindowInfo& w) const {
+    if (!ExclusionRule(w).empty()) return {};
     auto p = ToLowerAscii(w.process_name);
     for (const auto& c : config_.process_candidates) {
-        if (!c.empty() && p.find(ToLowerAscii(c)) != std::string::npos) return true;
+        if (!c.empty() && p.find(ToLowerAscii(c)) != std::string::npos) {
+            return "process_candidates=\"" + c + "\"";
+        }
     }
     for (const auto& tc : config_.title_contains) {
         if (!tc.empty() && ContainsInsensitive(w.title, tc)) {
-            // sinal por título: aceito se não for processo explicitamente excluído
-            if (!IsExcluded(w)) return true;
+            return "title_contains=\"" + tc + "\"";
         }
     }
-    return false;
+    return {};
+}
+
+bool WindowRules::IsExcluded(const WindowInfo& w) const {
+    return !ExclusionRule(w).empty();
+}
+
+bool WindowRules::IsCandidate(const WindowInfo& w) const {
+    return !CandidateRule(w).empty();
 }
 
 MatchResult WindowRules::SelectTftWindow(const std::vector<WindowInfo>& windows) const {
+    MatchResult result;
     std::vector<const WindowInfo*> matches;
     for (const auto& w : windows) {
         if (!w.visible) continue;
+        WindowEvaluation evaluation;
+        evaluation.process_name = w.process_name;
+        evaluation.class_name = w.class_name;
+        evaluation.width = w.width;
+        evaluation.height = w.height;
+        evaluation.excluded = IsExcluded(w);
+        if (!evaluation.excluded) {
+            evaluation.candidate = IsCandidate(w);
+            if (evaluation.candidate) evaluation.reason = CandidateRule(w);
+        }
+        if (evaluation.excluded) evaluation.reason = ExclusionRule(w);
+        result.evaluations.push_back(std::move(evaluation));
         if (IsCandidate(w)) matches.push_back(&w);
     }
+
     if (matches.empty()) {
-        return {MatchStatus::NoCandidate, std::nullopt, "Janela do TFT não encontrada"};
+        result.reason = "Janela do TFT não encontrada";
+        return result;
     }
     // preferir candidatos com processo correspondente (mais forte que título)
     std::vector<const WindowInfo*> strong;
@@ -139,13 +164,26 @@ MatchResult WindowRules::SelectTftWindow(const std::vector<WindowInfo>& windows)
     }
     const auto& pool = strong.empty() ? matches : strong;
     if (pool.size() > 1) {
-        return {MatchStatus::Ambiguous, std::nullopt, "Múltiplas janelas candidatas ao TFT"};
+        result.status = MatchStatus::Ambiguous;
+        result.reason = "Múltiplas janelas candidatas ao TFT: ";
+        for (std::size_t i = 0; i < pool.size(); ++i) {
+            if (i) result.reason += "; ";
+            result.reason += pool[i]->process_name.empty() ? pool[i]->title : pool[i]->process_name;
+            result.reason += " [" + CandidateRule(*pool[i]) + "]";
+        }
+        return result;
     }
     const WindowInfo* chosen = pool.front();
     if (chosen->width <= 0 || chosen->height <= 0) {
-        return {MatchStatus::NotCapturable, std::nullopt, "Janela do TFT sem dimensões válidas"};
+        result.status = MatchStatus::NotCapturable;
+        result.reason = "Janela do TFT sem dimensões válidas";
+        return result;
     }
-    return {MatchStatus::Matched, *chosen, "OK"};
+    result.status = MatchStatus::Matched;
+    result.window = *chosen;
+    result.reason = "OK";
+    result.matched_rule = CandidateRule(*chosen);
+    return result;
 }
 
 } // namespace tft

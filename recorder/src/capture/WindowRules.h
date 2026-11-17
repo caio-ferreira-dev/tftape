@@ -36,10 +36,22 @@ struct WindowRuleConfig {
 
 enum class MatchStatus { Matched, NoCandidate, Ambiguous, NotCapturable };
 
+struct WindowEvaluation {
+    std::string process_name;
+    std::string class_name;
+    int width = 0;
+    int height = 0;
+    bool excluded = false;
+    bool candidate = false;
+    std::string reason; // regra aplicada (ou motivo da rejeição)
+};
+
 struct MatchResult {
     MatchStatus status = MatchStatus::NoCandidate;
     std::optional<WindowInfo> window; // cópia da janela selecionada (quando Matched)
     std::string reason;
+    std::string matched_rule;                    // ex.: process_candidates="tftclient.exe"
+    std::vector<WindowEvaluation> evaluations;   // candidatos avaliados, para diagnóstico
 };
 
 class WindowRules {
@@ -51,6 +63,9 @@ public:
 
     bool IsExcluded(const WindowInfo& w) const;
     bool IsCandidate(const WindowInfo& w) const;
+    /// Regra que classificou a janela (para logs). Vazia se não houver match/exclusão.
+    std::string ExclusionRule(const WindowInfo& w) const;
+    std::string CandidateRule(const WindowInfo& w) const;
     const WindowRuleConfig& GetConfig() const { return config_; }
 
 private:
