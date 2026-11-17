@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(TFT_BUILD_TESTS "Build unit tests" ON)
 
+# Mensagens de erro/aviso em português: garante que MSVC interprete e emita UTF-8,
+# evitando dupla codificação (ex.: "indisponÃvel") na UI.
+if (MSVC)
+  add_compile_options(/utf-8)
+endif()
+
 add_library(recorder_core
   src/output/OutputPath.cpp
   src/output/RecordingSettings.cpp
