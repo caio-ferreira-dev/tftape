@@ -20,4 +20,39 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
   </ItemGroup>
+
+  <!--
+    Cópia automática do core C++ (recorder.exe) e das regras de detecção de janela.
+    O core é compilado separadamente (CMake, configuração Release); estes itens apenas
+    copiam o artefato para a saída da UI (build e publish), evitando cópia manual.
+    Um caminho diferente pode ser informado via -p:RecorderBuildDir=...
+  -->
+  <PropertyGroup>
+    <RecorderBuildDir Condition="'$(RecorderBuildDir)' == ''">$(MSBuildThisFileDirectory)..\..\recorder\build\Release\</RecorderBuildDir>
+    <RecorderConfigDir Condition="'$(RecorderConfigDir)' == ''">$(MSBuildThisFileDirectory)..\..\recorder\config\</RecorderConfigDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(RecorderBuildDir)recorder.exe"
+          Condition="Exists('$(RecorderBuildDir)recorder.exe')"
+          Link="recorder.exe"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(RecorderConfigDir)tft_window_rules.json"
+          Condition="Exists('$(RecorderConfigDir)tft_window_rules.json')"
+          Link="tft_window_rules.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(RecorderConfigDir)tft_window_rules.sample.json"
+          Condition="Exists('$(RecorderConfigDir)tft_window_rules.sample.json')"
+          Link="tft_window_rules.sample.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Avisa (sem quebrar o build da UI) quando o core ainda não foi compilado. -->
+  <Target Name="WarnIfRecorderCoreMissing" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Warning Condition="!Exists('$(RecorderBuildDir)recorder.exe')"
+             Text="recorder.exe não encontrado em '$(RecorderBuildDir)'. Compile o core (cmake --build recorder/build --config Release) ou passe -p:RecorderBuildDir=&lt;pasta&gt;." />
+  </Target>
 </Project>

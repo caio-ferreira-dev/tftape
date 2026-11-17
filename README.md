@@ -27,7 +27,16 @@ ctest --test-dir recorder/build -C Release
 dotnet restore ui/TftVodRecorder.Ui.sln
 dotnet build ui/TftVodRecorder.Ui.sln -c Release
 ```
-Copie `recorder.exe` para junto do executável da UI (ou configure o caminho) para permitir o controle via processo.
+O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft_window_rules.json` (se existir) e `tft_window_rules.sample.json` para a saída da UI. Se o core ainda não foi compilado, o build emite um aviso e a UI não encontra o gravador.
+
+Para usar um core em outro diretório:
+```powershell
+dotnet build ui/TftVodRecorder.Ui.sln -c Release -p:RecorderBuildDir=C:\caminho\para\build\Release\
+```
+Para publicar (também inclui os arquivos do core):
+```powershell
+dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
+```
 
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).

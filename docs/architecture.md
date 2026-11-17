@@ -10,6 +10,7 @@
 - **Encode/Mux**: H.264 + AAC em container MP4 (Media Foundation no Windows), com perfis 720p/1080p e 30/60 fps.
 - **Output**: valida pasta, gera nomes únicos `.mp4` e garante finalização segura do arquivo.
 - **Protocol/App**: máquina de estados da gravação e contrato de comandos/eventos com a UI.
+- **Build/empacotamento**: o build da UI copia `recorder.exe` (padrão: `recorder/build/Release`) e as regras de janela (`recorder/config`) para a saída e para o publish, via `RecorderBuildDir`/`RecorderConfigDir` no `.csproj`. O processo do core roda com `WorkingDirectory` na pasta do próprio executável, então encontra `tft_window_rules.json` ao lado dele.
 
 ## Plataformas
 - **Alvo de execução:** Windows 10/11 (captura WGC, WASAPI, Media Foundation, WinUI 3).
