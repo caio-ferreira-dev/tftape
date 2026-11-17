@@ -1,5 +1,7 @@
 #include "capture/TftWindowFinder.h"
 
+#include "util/Logger.h"
+
 #if defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
@@ -84,9 +86,38 @@ std::vector<WindowInfo> TftWindowFinder::EnumerateWindows() {
 }
 #endif
 
+namespace {
+const char* StatusName(MatchStatus status) {
+    switch (status) {
+        case MatchStatus::Matched: return "matched";
+        case MatchStatus::NoCandidate: return "no_candidate";
+        case MatchStatus::Ambiguous: return "ambiguous";
+        case MatchStatus::NotCapturable: return "not_capturable";
+    }
+    return "unknown";
+}
+} // namespace
+
 MatchResult TftWindowFinder::Find() const {
     auto windows = EnumerateWindows();
-    return rules_.SelectTftWindow(windows);
+    MatchResult result = rules_.SelectTftWindow(windows);
+
+    log::Info("Detecção TFT: " + std::to_string(windows.size()) + " janela(s) visível(is); "
+              "status=" + StatusName(result.status) + "; motivo=" + result.reason);
+    for (const auto& evaluation : result.evaluations) {
+        const std::string detail = "  janela: processo='" + evaluation.process_name +
+            "' classe='" + evaluation.class_name + "' " +
+            std::to_string(evaluation.width) + "x" + std::to_string(evaluation.height) +
+            "; " + (evaluation.excluded ? "excluída por " :
+                    evaluation.candidate ? "candidata por " : "não candidata") +
+            (evaluation.reason.empty() ? std::string("nenhuma regra") : evaluation.reason);
+        log::Debug(detail);
+    }
+    if (result.window) {
+        log::Info("Janela selecionada: processo='" + result.window->process_name +
+                  "' título='" + result.window->title + "' regra=" + result.matched_rule);
+    }
+    return result;
 }
 
 } // namespace tft

@@ -38,6 +38,11 @@ Para publicar (também inclui os arquivos do core):
 dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
 ```
 
+## Logs do core
+- Arquivo: `%LOCALAPPDATA%\TftVodRecorder\logs\recorder.log` (com rotação: `recorder.log.1`, `.2`, `.3`; até 1 MB por arquivo).
+- Registra carregamento das regras de janela, todas as janelas avaliadas (processo/classe/dimensões), regra que selecionou ou excluiu cada uma, motivo de falha/ambiguidade, início/fim do recorder e exceções fatais. Títulos de janelas só aparecem na janela selecionada e no resumo de ambiguidade.
+- Diagnósticos também ecoam no `stderr`, que a UI drena para evitar travamento por pipe cheio.
+
 ## Comportamento
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.

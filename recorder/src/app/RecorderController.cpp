@@ -5,6 +5,7 @@
 #include "app/RecordingSession.h"
 #include "capture/TftWindowFinder.h"
 #include "output/OutputPath.h"
+#include "util/Logger.h"
 
 namespace tft {
 
@@ -23,10 +24,12 @@ bool RecorderController::FinalizeActiveRecording(std::string& error) {
         state_ = RecorderState::Error;
         last_error_ = error;
         session_.reset();
+        log::Error("Falha ao finalizar gravação: " + error);
         return false;
     }
     session_.reset();
     state_ = RecorderState::Idle;
+    log::Info("Gravação finalizada: " + last_output_path_);
     return true;
 }
 
@@ -101,11 +104,23 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 namespace fs = std::filesystem;
                 if (!rules_path_.empty()) {
                     std::string ferr;
-                    finder.LoadRulesFromFile(rules_path_, &ferr);
+                    if (finder.LoadRulesFromFile(rules_path_, &ferr)) {
+                        log::Info("Regras de janela carregadas: " + rules_path_);
+                    } else {
+                        log::Warning("Falha ao carregar regras de janela '" + rules_path_ + "': " + ferr + "; usando padrão");
+                    }
                 } else {
                     const char* defaults[] = {"tft_window_rules.json", "config/tft_window_rules.json", "recorder/config/tft_window_rules.json"};
                     for (const char* p : defaults) {
-                        if (fs::exists(p)) { finder.LoadRulesFromFile(p, nullptr); break; }
+                        if (fs::exists(p)) {
+                            std::string ferr;
+                            if (finder.LoadRulesFromFile(p, &ferr)) {
+                                log::Info("Regras de janela carregadas: " + std::string(p));
+                            } else {
+                                log::Warning("Falha ao carregar regras '" + std::string(p) + "': " + ferr + "; usando padrão");
+                            }
+                            break;
+                        }
                     }
                 }
                 auto match = finder.Find();
@@ -120,6 +135,7 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 std::vector<std::string> warnings;
                 void* hwnd = reinterpret_cast<void*>(static_cast<uintptr_t>(match.window->handle_id));
                 if (!session_->Start(cmd.settings, hwnd, match.window->process_id, serr, &warnings)) {
+                    log::Error("Falha ao iniciar sessão: " + serr);
                     state_ = RecorderState::Error;
                     last_error_ = serr;
                     session_.reset();
