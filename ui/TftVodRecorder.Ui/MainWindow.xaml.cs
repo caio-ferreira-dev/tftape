@@ -15,10 +15,11 @@ public sealed partial class MainWindow : Window
     {
         ViewModel = new RecorderViewModel(_recorderService);
         InitializeComponent();
-        Closing += OnClosing;
+        // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
+        Closed += OnClosed;
     }
 
-    private void OnClosing(object sender, WindowClosingEventArgs args)
+    private void OnClosed(object sender, WindowEventArgs args)
     {
         // Envia shutdown e aguarda a finalização do MP4 antes de encerrar a UI.
         // O serviço mata a árvore de processos se o core não responder.
