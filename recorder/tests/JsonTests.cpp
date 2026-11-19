@@ -15,7 +15,7 @@ TEST(Json, ParsesFlatObjectWithMixedValueTypes) {
         "{\"s\":\"texto\",\"b\":true,\"f\":false,\"n\":123,\"arr\":[1,2],"
         "\"obj\":{\"k\":\"v\"},\"nil\":null,\"neg\":-1.5e+2}", obj, &error)) << error;
 
-    ASSERT_EQ(obj.size(), 9u);
+    ASSERT_EQ(obj.size(), 8u);
     EXPECT_EQ(obj.at("s").type, ValueType::String);
     EXPECT_EQ(obj.at("s").text, "texto");
     EXPECT_EQ(obj.at("b").type, ValueType::Bool);
