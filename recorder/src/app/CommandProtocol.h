@@ -24,15 +24,15 @@ struct Event {
     std::string ToJsonLine() const;
 };
 
-// Protocolo JSON-lines simples (campos conhecidos). Suficiente para controle UI<->core.
+// Protocolo JSON-lines da UI. O parse é estrito: JSON malformado, tipos errados,
+// chaves desconhecidas/duplicadas e valores inválidos são recusados com mensagem
+// detalhada em `error` (quando fornecido), em vez de caírem silenciosamente no padrão.
 class CommandProtocol {
 public:
     static std::optional<Command> ParseLine(std::string_view line);
+    static std::optional<Command> ParseLine(std::string_view line, std::string* error);
     static Event Ok(std::string_view name, std::string_view message = "", std::string_view path = "");
     static Event Error(std::string_view name, std::string_view message);
-
-    static std::optional<std::string> ExtractString(std::string_view json, std::string_view key);
-    static std::optional<bool> ExtractBool(std::string_view json, std::string_view key);
 };
 
 } // namespace tft

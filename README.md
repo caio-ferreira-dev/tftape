@@ -50,6 +50,8 @@ dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
 - Diagnósticos também ecoam no `stderr`, que a UI drena para evitar travamento por pipe cheio.
 
 ## Comportamento
+- Comandos da UI são JSON-lines validados de forma estrita: JSON malformado, tipo errado, chave desconhecida/duplicada ou valor inválido (ex.: `fps: "45"`) geram erro detalhado no evento `error`, sem aplicar valores padrão silenciosamente. Escapes Unicode (`\uXXXX`) enviados pelo .NET são decodificados corretamente (pastas com acentos funcionam).
+- A pasta de destino precisa ser absoluta e válida no Windows (sem `..`, caracteres reservados ou nomes como `CON`); o core verifica a escrita antes de iniciar.
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
 - Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
