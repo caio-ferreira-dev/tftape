@@ -80,7 +80,7 @@ dotnet build ui/TftVodRecorder.Ui.sln -c Release
 dotnet test ui/TftVodRecorder.Ui.sln -c Release --no-build
 ```
 
-> Status: checklist publicado; resultados reais ainda pendentes de execução no Windows. Preencha o documento com `OK`/`Falha`/`N/A` antes do merge final da documentação.
+> Status: validação concluída em 19/11/2026 no Windows; todos os casos do checklist passaram. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).
 
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).
