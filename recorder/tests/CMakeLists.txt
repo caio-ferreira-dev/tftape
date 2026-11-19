@@ -19,6 +19,7 @@ add_executable(recorder_tests
   AudioRoutingTests.cpp
   LoggerTests.cpp
   JsonTests.cpp
+  EncoderProfilesTests.cpp
 )
 
 target_link_libraries(recorder_tests PRIVATE recorder_core GTest::gtest_main)

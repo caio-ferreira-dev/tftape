@@ -22,6 +22,9 @@ add_library(recorder_core
   src/app/RecorderController.cpp
   src/app/RecordingSession.cpp
   src/encode/MfMp4Writer.cpp
+  src/encode/Mp4Muxer.cpp
+  src/encode/VideoEncoderMf.cpp
+  src/encode/AudioEncoderMf.cpp
   src/audio/AudioMixer.cpp
   src/audio/AudioRouting.cpp
   src/audio/PcmStreamBuffer.cpp
