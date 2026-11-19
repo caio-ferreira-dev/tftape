@@ -12,6 +12,7 @@ Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Window
 - `ui/` — aplicação WinUI 3 (`TftVodRecorder.Ui`), lógica testável sem WinUI (`TftVodRecorder.Ui.Core`) e testes xUnit (`ui.tests`).
 - `.agents/SKILLS.md` — diretrizes de testes unitários e manutenção do git.
 - `docs/architecture.md` — visão da arquitetura.
+- `docs/e2e-validation.md` — checklist e registro da validação final no Windows com o cliente TFT real.
 - Plano: `/home/caio/.opencode/plan/tft-vod-recorder.md`.
 
 ## Build (Windows)
@@ -19,8 +20,9 @@ Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Window
 ```powershell
 cmake -S recorder -B recorder/build -DTFT_BUILD_TESTS=ON
 cmake --build recorder/build --config Release
-ctest --test-dir recorder/build -C Release
+ctest --test-dir recorder/build -C Release --output-on-failure
 ```
+Esperado: **74 testes C++** passando.
 
 ### UI (WinUI 3)
 ```powershell
@@ -33,6 +35,7 @@ O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft
 ```powershell
 dotnet test ui/TftVodRecorder.Ui.sln -c Release
 ```
+Esperado: **11 testes xUnit** passando.
 Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, exceções, `PropertyChanged` e o despachante injetado.
 
 Para usar um core em outro diretório:
@@ -55,6 +58,29 @@ dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
 - Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
+
+## Validação end-to-end (Windows)
+
+Testes unitários cobrem a lógica pura; a validação final precisa ser executada no Windows com o cliente TFT real. O checklist completo está em [`docs/e2e-validation.md`](docs/e2e-validation.md) e cobre:
+
+- Perfis 720p/1080p × 30/60 fps, com inspeção do MP4 via `ffprobe`.
+- Combinações de áudio (jogo, sistema, microfone) e falhas de dispositivos opcionais.
+- Casos de falha: janela ausente/ambígua, cliente LoL aberto, parada/fechamento durante a gravação, caminhos com acento e protocolo JSON inválido.
+- Revisão dos logs de detecção e diagnósticos do core.
+
+Comandos de pré-requisito (os mesmos das seções de build/teste):
+
+```powershell
+cmake -S recorder -B recorder/build -DTFT_BUILD_TESTS=ON
+cmake --build recorder/build --config Release
+ctest --test-dir recorder/build -C Release --output-on-failure
+
+dotnet restore ui/TftVodRecorder.Ui.sln
+dotnet build ui/TftVodRecorder.Ui.sln -c Release
+dotnet test ui/TftVodRecorder.Ui.sln -c Release --no-build
+```
+
+> Status: checklist publicado; resultados reais ainda pendentes de execução no Windows. Preencha o documento com `OK`/`Falha`/`N/A` antes do merge final da documentação.
 
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).

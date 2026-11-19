@@ -16,3 +16,8 @@
 ## Plataformas
 - **Alvo de execução:** Windows 10/11 (captura WGC, WASAPI, Media Foundation, WinUI 3).
 - **Testes unitários de lógica:** módulos puros (regras, settings, paths, protocolo, estado) são portáveis e testáveis independentemente das APIs de hardware/UI.
+
+## Validação
+- **Automática:** 74 testes C++ (GoogleTest/CTest) e 11 testes xUnit, executados com os comandos do `README.md`.
+- **End-to-end:** checklist e registro em [`e2e-validation.md`](e2e-validation.md), executados manualmente no Windows com o cliente TFT real (captura WGC, WASAPI, Media Foundation, mux MP4, protocolo e UI juntos).
+- Como as APIs de captura/áudio/encode e a WinUI 3 não existem no ambiente WSL/Linux, os resultados E2E são preenchidos pelo validador no Windows; a documentação final incorpora esses resultados.
