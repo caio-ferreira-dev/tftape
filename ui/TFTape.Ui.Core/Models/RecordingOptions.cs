@@ -1,4 +1,4 @@
-namespace TftVodRecorder.Ui.Models;
+namespace TFTape.Ui.Models;
 
 public sealed class RecordingOptions
 {

@@ -18,7 +18,7 @@ enum class LogLevel { Debug, Info, Warning, Error };
 class Logger {
 public:
     struct Options {
-        std::string directory;   // vazia => LocalAppData/TftVodRecorder/logs
+        std::string directory;   // vazia => LocalAppData/TFTape/logs
         std::string file_name = "recorder.log";
         std::size_t max_bytes = 1024 * 1024;
         std::size_t max_files = 3;
@@ -42,7 +42,7 @@ public:
     /// Caminho do arquivo ativo (vazio se a configuração falhou).
     std::filesystem::path FilePath() const;
 
-    /// Diretório padrão: %LOCALAPPDATA%\TftVodRecorder\logs no Windows.
+    /// Diretório padrão: %LOCALAPPDATA%\TFTape\logs no Windows.
     static std::filesystem::path DefaultDirectory();
 
     static Logger& Default();

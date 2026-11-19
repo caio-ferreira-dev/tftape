@@ -1,7 +1,7 @@
-using TftVodRecorder.Ui.Models;
-using TftVodRecorder.Ui.Services;
+using TFTape.Ui.Models;
+using TFTape.Ui.Services;
 
-namespace TftVodRecorder.Ui.Tests;
+namespace TFTape.Ui.Tests;
 
 internal sealed class FakeRecorderService : IRecorderService
 {

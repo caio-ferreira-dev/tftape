@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 
-namespace TftVodRecorder.Ui;
+namespace TFTape.Ui;
 
 public partial class App : Application
 {

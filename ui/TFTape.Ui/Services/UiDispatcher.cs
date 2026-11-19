@@ -1,6 +1,6 @@
 using Microsoft.UI.Dispatching;
 
-namespace TftVodRecorder.Ui.Services;
+namespace TFTape.Ui.Services;
 
 /// <summary>Ponte entre DispatcherQueue do WinUI e a abstração usada pelo ViewModel.</summary>
 public sealed class UiDispatcher : IUiDispatcher

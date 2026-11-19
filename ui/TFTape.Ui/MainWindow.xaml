@@ -1,8 +1,8 @@
 <Window
-    x:Class="TftVodRecorder.Ui.MainWindow"
+    x:Class="TFTape.Ui.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="TFT VOD Recorder">
+    Title="TFTape">
     <Grid Background="{StaticResource Brush.Background}" Padding="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -11,7 +11,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Spacing="4">
-            <TextBlock Text="TFT VOD Recorder" FontSize="24" FontWeight="SemiBold"/>
+            <TextBlock Text="TFTape" FontSize="24" FontWeight="SemiBold"/>
             <TextBlock Text="Grave apenas a janela do Teamfight Tactics" Style="{StaticResource SecondaryText}"/>
         </StackPanel>
 

@@ -1,4 +1,4 @@
-namespace TftVodRecorder.Ui.Services;
+namespace TFTape.Ui.Services;
 
 /// <summary>
 /// Abstração do despachante da UI para permitir testes sem WinUI.

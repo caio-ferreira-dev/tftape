@@ -82,13 +82,13 @@ Logger::~Logger() = default;
 std::filesystem::path Logger::DefaultDirectory() {
 #if defined(_WIN32)
     if (const char* local = std::getenv("LOCALAPPDATA")) {
-        return std::filesystem::path(local) / "TftVodRecorder" / "logs";
+        return std::filesystem::path(local) / "TFTape" / "logs";
     }
     if (const char* appdata = std::getenv("APPDATA")) {
-        return std::filesystem::path(appdata) / "TftVodRecorder" / "logs";
+        return std::filesystem::path(appdata) / "TFTape" / "logs";
     }
 #endif
-    return std::filesystem::temp_directory_path() / "tft-vod-recorder" / "logs";
+    return std::filesystem::temp_directory_path() / "TFTape" / "logs";
 }
 
 bool Logger::Configure(const Options& options, std::string* error) {

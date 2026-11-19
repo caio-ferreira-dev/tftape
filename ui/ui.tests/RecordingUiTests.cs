@@ -1,8 +1,8 @@
-using TftVodRecorder.Ui.Services;
-using TftVodRecorder.Ui.ViewModels;
+using TFTape.Ui.Services;
+using TFTape.Ui.ViewModels;
 using Xunit;
 
-namespace TftVodRecorder.Ui.Tests;
+namespace TFTape.Ui.Tests;
 
 public sealed class RecordingUiTests
 {

@@ -18,6 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TftVodRecorder.Ui.Core\TftVodRecorder.Ui.Core.csproj" />
+    <ProjectReference Include="..\TFTape.Ui.Core\TFTape.Ui.Core.csproj" />
   </ItemGroup>
 </Project>

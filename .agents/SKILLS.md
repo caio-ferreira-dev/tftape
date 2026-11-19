@@ -1,4 +1,4 @@
-# Skills do Projeto — TFT VOD Recorder
+# Skills do Projeto — TFTape
 
 ## 1) Testes unitários
 
