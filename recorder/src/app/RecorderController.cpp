@@ -41,9 +41,11 @@ void RecorderController::SetStartHookResult(bool ok, std::string message, std::s
 }
 
 std::vector<std::string> RecorderController::HandleLine(const std::string& line) {
-    auto cmd = CommandProtocol::ParseLine(line);
+    std::string error;
+    auto cmd = CommandProtocol::ParseLine(line, &error);
     if (!cmd) {
-        return {CommandProtocol::Error("error", "Comando inválido").ToJsonLine()};
+        if (error.empty()) error = "Comando inválido";
+        return {CommandProtocol::Error("error", error).ToJsonLine()};
     }
     return HandleCommand(*cmd);
 }

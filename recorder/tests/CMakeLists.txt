@@ -18,6 +18,7 @@ add_executable(recorder_tests
   PcmStreamBufferTests.cpp
   AudioRoutingTests.cpp
   LoggerTests.cpp
+  JsonTests.cpp
 )
 
 target_link_libraries(recorder_tests PRIVATE recorder_core GTest::gtest_main)

@@ -54,3 +54,29 @@ TEST(RecorderState, ReportsErrorOnFailedStart) {
     EXPECT_EQ(c.GetState(), RecorderState::Error);
     fs::remove_all(dir);
 }
+
+TEST(RecorderState, ReportsDetailedErrorForInvalidJson) {
+    RecorderController c;
+    auto responses = c.HandleLine("{\"cmd\":\"start\",}");
+    ASSERT_EQ(responses.size(), 1u);
+    EXPECT_NE(responses[0].find("\"ok\":false"), std::string::npos);
+    EXPECT_NE(responses[0].find("JSON inválido"), std::string::npos);
+    EXPECT_EQ(c.GetState(), RecorderState::Idle);
+}
+
+TEST(RecorderState, RejectsInvalidSettingWithDetailedMessage) {
+    RecorderController c;
+    auto responses = c.HandleLine(
+        "{\"cmd\":\"start\",\"output_dir\":\"C:/vods\",\"fps\":\"45\"}");
+    ASSERT_EQ(responses.size(), 1u);
+    EXPECT_NE(responses[0].find("fps inválido"), std::string::npos);
+    EXPECT_EQ(c.GetState(), RecorderState::Idle);
+}
+
+TEST(RecorderState, RejectsNonAbsoluteOutputDirectory) {
+    RecorderController c;
+    auto responses = c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"vods\"}");
+    ASSERT_EQ(responses.size(), 1u);
+    EXPECT_NE(responses[0].find("absoluto"), std::string::npos);
+    EXPECT_EQ(c.GetState(), RecorderState::Error);
+}

@@ -1,11 +1,14 @@
 #include "app/CommandProtocol.h"
 
-#include <cctype>
+#include <initializer_list>
 #include <sstream>
 
-namespace tft {
+#include "util/Json.h"
 
-static std::string JsonEscape(std::string_view s) {
+namespace tft {
+namespace {
+
+std::string JsonEscape(std::string_view s) {
     std::string out;
     out.reserve(s.size() + 8);
     for (char c : s) {
@@ -21,6 +24,58 @@ static std::string JsonEscape(std::string_view s) {
     return out;
 }
 
+bool OnlyKnownKeys(const json::Object& obj, std::initializer_list<std::string_view> allowed,
+                   std::string* error) {
+    for (const auto& [key, field] : obj) {
+        (void)field;
+        bool known = false;
+        for (auto name : allowed) {
+            if (std::string_view(key) == name) {
+                known = true;
+                break;
+            }
+        }
+        if (!known) {
+            if (error) *error = "campo desconhecido: '" + key + "'";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ReadString(const json::Object& obj, std::string_view key, std::string& out, std::string* error) {
+    const auto name = std::string(key);
+    auto it = obj.find(name);
+    if (it == obj.end()) {
+        if (error) *error = "campo obrigatório ausente: '" + name + "'";
+        return false;
+    }
+    if (it->second.type != json::ValueType::String) {
+        if (error) *error = "campo '" + name + "' deve ser string";
+        return false;
+    }
+    out = it->second.text;
+    return true;
+}
+
+bool ReadBool(const json::Object& obj, std::string_view key, bool fallback, bool& out,
+              std::string* error) {
+    const auto name = std::string(key);
+    auto it = obj.find(name);
+    if (it == obj.end()) {
+        out = fallback;
+        return true;
+    }
+    if (it->second.type != json::ValueType::Bool) {
+        if (error) *error = "campo '" + name + "' deve ser booleano (true/false)";
+        return false;
+    }
+    out = it->second.bool_value;
+    return true;
+}
+
+} // namespace
+
 std::string Event::ToJsonLine() const {
     std::ostringstream oss;
     oss << "{\"event\":\"" << JsonEscape(name) << "\","
@@ -33,77 +88,72 @@ std::string Event::ToJsonLine() const {
 Event CommandProtocol::Ok(std::string_view name, std::string_view message, std::string_view path) {
     return Event{std::string(name), std::string(message), std::string(path), true};
 }
+
 Event CommandProtocol::Error(std::string_view name, std::string_view message) {
     return Event{std::string(name), std::string(message), "", false};
 }
 
-std::optional<std::string> CommandProtocol::ExtractString(std::string_view json, std::string_view key) {
-    std::string pattern = "\"" + std::string(key) + "\"";
-    auto pos = json.find(pattern);
-    if (pos == std::string::npos) return std::nullopt;
-    pos = json.find(':', pos + pattern.size());
-    if (pos == std::string::npos) return std::nullopt;
-    pos = json.find('"', pos + 1);
-    if (pos == std::string::npos) return std::nullopt;
-    auto end = pos + 1;
-    std::string value;
-    while (end < json.size()) {
-        char c = json[end++];
-        if (c == '\\' && end < json.size()) {
-            char n = json[end++];
-            if (n == 'n') value.push_back('\n');
-            else if (n == 'r') value.push_back('\r');
-            else if (n == 't') value.push_back('\t');
-            else value.push_back(n);
-        } else if (c == '"') {
-            return value;
-        } else {
-            value.push_back(c);
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<bool> CommandProtocol::ExtractBool(std::string_view json, std::string_view key) {
-    std::string pattern = "\"" + std::string(key) + "\"";
-    auto pos = json.find(pattern);
-    if (pos == std::string::npos) return std::nullopt;
-    pos = json.find(':', pos + pattern.size());
-    if (pos == std::string::npos) return std::nullopt;
-    auto rest = json.substr(pos + 1);
-    auto t = rest.find("true");
-    auto f = rest.find("false");
-    if (t != std::string_view::npos && (f == std::string_view::npos || t < f)) return true;
-    if (f != std::string_view::npos) return false;
-    return std::nullopt;
-}
-
 std::optional<Command> CommandProtocol::ParseLine(std::string_view line) {
-    if (line.empty()) return std::nullopt;
-    auto cmd = ExtractString(line, "cmd");
-    if (!cmd) return std::nullopt;
-    Command c;
-    if (*cmd == "start") {
-        c.type = CommandType::Start;
-        if (auto dir = ExtractString(line, "output_dir")) c.settings.output_dir = *dir;
-        if (auto res = ExtractString(line, "resolution")) {
-            Resolution r; if (ParseResolution(*res, r)) c.settings.resolution = r;
-        }
-        if (auto fps = ExtractString(line, "fps")) {
-            Framerate f; if (ParseFramerate(*fps, f)) c.settings.framerate = f;
-        }
-        if (auto v = ExtractBool(line, "game_audio")) c.settings.audio.game_audio = *v;
-        if (auto v = ExtractBool(line, "system_audio")) c.settings.audio.system_audio = *v;
-        if (auto v = ExtractBool(line, "microphone")) c.settings.audio.microphone = *v;
+    return ParseLine(line, nullptr);
+}
+
+std::optional<Command> CommandProtocol::ParseLine(std::string_view line, std::string* error) {
+    json::Object obj;
+    if (!json::ParseFlatObject(line, obj, error)) return std::nullopt;
+
+    std::string cmd;
+    if (!ReadString(obj, "cmd", cmd, error)) return std::nullopt;
+
+    if (cmd == "stop" || cmd == "ping" || cmd == "shutdown") {
+        if (!OnlyKnownKeys(obj, {"cmd"}, error)) return std::nullopt;
+        Command c;
+        if (cmd == "stop") c.type = CommandType::Stop;
+        else if (cmd == "ping") c.type = CommandType::Ping;
+        else c.type = CommandType::Shutdown;
         return c;
-    } else if (*cmd == "stop") {
-        c.type = CommandType::Stop; return c;
-    } else if (*cmd == "ping") {
-        c.type = CommandType::Ping; return c;
-    } else if (*cmd == "shutdown") {
-        c.type = CommandType::Shutdown; return c;
     }
-    c.type = CommandType::Unknown;
+
+    if (cmd != "start") {
+        if (error) *error = "comando desconhecido: '" + cmd + "'";
+        return std::nullopt;
+    }
+
+    if (!OnlyKnownKeys(obj, {"cmd", "output_dir", "resolution", "fps", "game_audio",
+                             "system_audio", "microphone"}, error)) {
+        return std::nullopt;
+    }
+
+    Command c;
+    c.type = CommandType::Start;
+    if (!ReadString(obj, "output_dir", c.settings.output_dir, error)) return std::nullopt;
+
+    auto it = obj.find("resolution");
+    if (it != obj.end()) {
+        if (it->second.type != json::ValueType::String) {
+            if (error) *error = "campo 'resolution' deve ser string";
+            return std::nullopt;
+        }
+        if (!ParseResolution(it->second.text, c.settings.resolution)) {
+            if (error) *error = "resolução inválida: '" + it->second.text + "' (use 720p ou 1080p)";
+            return std::nullopt;
+        }
+    }
+
+    it = obj.find("fps");
+    if (it != obj.end()) {
+        if (it->second.type != json::ValueType::String) {
+            if (error) *error = "campo 'fps' deve ser string";
+            return std::nullopt;
+        }
+        if (!ParseFramerate(it->second.text, c.settings.framerate)) {
+            if (error) *error = "fps inválido: '" + it->second.text + "' (use 30 ou 60)";
+            return std::nullopt;
+        }
+    }
+
+    if (!ReadBool(obj, "game_audio", true, c.settings.audio.game_audio, error)) return std::nullopt;
+    if (!ReadBool(obj, "system_audio", false, c.settings.audio.system_audio, error)) return std::nullopt;
+    if (!ReadBool(obj, "microphone", false, c.settings.audio.microphone, error)) return std::nullopt;
     return c;
 }
 
