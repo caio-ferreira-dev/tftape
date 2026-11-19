@@ -3,12 +3,15 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "audio/AudioRouting.h"
 #include "audio/WasapiAppLoopbackSource.h"
 #include "audio/WasapiMicSource.h"
 #include "audio/WasapiSystemLoopbackSource.h"
+#include "encode/MfMp4Writer.h"
 #include "output/OutputPath.h"
 
 #if defined(_WIN32)
@@ -20,6 +23,9 @@ using Microsoft::WRL::ComPtr;
 #endif
 
 namespace tft {
+
+RecordingSession::RecordingSession(std::shared_ptr<IMp4Writer> writer)
+    : writer_(writer ? std::move(writer) : std::make_shared<MfMp4Writer>()) {}
 
 RecordingSession::~RecordingSession() { std::string e; Stop(e); }
 
@@ -89,7 +95,7 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
     if (!capture_.Start(window_handle)) { error = "Falha ao iniciar captura WGC da janela do TFT"; return false; }
 
     auto profile = settings_.ToProfile();
-    if (!writer_.Open(output_path_, profile)) { error = writer_.LastError(); capture_.Stop(); return false; }
+    if (!writer_->Open(output_path_, profile)) { error = writer_->LastError(); capture_.Stop(); return false; }
 
     // Áudio: som do jogo (padrão) + opções
     const AudioRoutingPlan audio_plan = PlanAudioRouting(settings_.audio, process_id);
@@ -132,7 +138,7 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
         mixer_.SetMicSource(nullptr);
         game_src_.reset(); sys_src_.reset(); mic_src_.reset();
         capture_.Stop();
-        writer_.Abort();
+        writer_->Abort();
         return false;
     }
     if (warnings) *warnings = audio_check.warnings;
@@ -168,8 +174,8 @@ bool RecordingSession::Stop(std::string& error) {
     if (video_thread_.joinable()) video_thread_.join();
     mixer_.Stop();
     capture_.Stop();
-    if (!writer_.Finalize()) { error = writer_.LastError(); writer_.Close(); return false; }
-    writer_.Close();
+    if (!writer_->Finalize()) { error = writer_->LastError(); writer_->Close(); return false; }
+    writer_->Close();
     return true;
 }
 
@@ -230,7 +236,7 @@ bool RecordingSession::WriteVideoTick(int64_t now_100ns, std::vector<uint8_t>& b
     vfd.data = nv12.data();
     vfd.width = profile.width; vfd.height = profile.height; vfd.stride = profile.width;
     vfd.timestamp_100ns = now_100ns;
-    return writer_.WriteVideoFrame(vfd);
+    return writer_->WriteVideoFrame(vfd);
 }
 
 void RecordingSession::WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& buf) {
@@ -239,11 +245,11 @@ void RecordingSession::WriteAudioTick(int64_t now_100ns, std::vector<uint8_t>& b
     as.data = buf.data();
     as.size_bytes = (uint32_t)buf.size();
     as.timestamp_100ns = now_100ns;
-    writer_.WriteAudio(as);
+    writer_->WriteAudio(as);
 }
 
 #else
-bool RecordingSession::Start(const RecordingSettings&, void*, unsigned long, std::string& error) { error = "Gravação suportada apenas no Windows"; return false; }
+bool RecordingSession::Start(const RecordingSettings&, void*, unsigned long, std::string& error, std::vector<std::string>*) { error = "Gravação suportada apenas no Windows"; return false; }
 bool RecordingSession::Stop(std::string&) { return true; }
 void RecordingSession::RunVideoLoop() {}
 void RecordingSession::RunAudioLoop() {}

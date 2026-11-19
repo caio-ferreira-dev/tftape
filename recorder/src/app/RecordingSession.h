@@ -8,14 +8,15 @@
 
 #include "audio/AudioMixer.h"
 #include "capture/WgcCaptureSource.h"
-#include "encode/MfMp4Writer.h"
+#include "encode/IMp4Writer.h"
 #include "output/RecordingSettings.h"
 
 namespace tft {
 
 class RecordingSession {
 public:
-    RecordingSession() = default;
+    // Injeção opcional do writer (útil para testes/integração); por padrão usa MfMp4Writer.
+    explicit RecordingSession(std::shared_ptr<IMp4Writer> writer = nullptr);
     ~RecordingSession();
 
     /// `warnings` recebe avisos de fontes opcionais indisponíveis (a gravação segue).
@@ -40,7 +41,7 @@ private:
     std::string output_path_;
 
     WgcCaptureSource capture_;
-    MfMp4Writer writer_;
+    std::shared_ptr<IMp4Writer> writer_;
     AudioMixer mixer_;
     std::shared_ptr<class IAudioSource> game_src_;
     std::shared_ptr<class IAudioSource> sys_src_;
