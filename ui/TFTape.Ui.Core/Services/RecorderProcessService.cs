@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using TftVodRecorder.Ui.Models;
+using TFTape.Ui.Models;
 
-namespace TftVodRecorder.Ui.Services;
+namespace TFTape.Ui.Services;
 
 /// <summary>
 /// Controla o processo recorder.exe via stdin/stdout (JSON-lines).

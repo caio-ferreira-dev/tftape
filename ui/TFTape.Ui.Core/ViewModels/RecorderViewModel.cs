@@ -1,10 +1,10 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using TftVodRecorder.Ui.Models;
-using TftVodRecorder.Ui.Services;
+using TFTape.Ui.Models;
+using TFTape.Ui.Services;
 
-namespace TftVodRecorder.Ui.ViewModels;
+namespace TFTape.Ui.ViewModels;
 
 public sealed class RelayCommand : ICommand
 {

@@ -1,4 +1,4 @@
-# TFT VOD Recorder
+# TFTape
 
 Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Windows.
 
@@ -9,11 +9,11 @@ Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Window
 
 ## Estrutura
 - `recorder/` — core C++ (CMake) e testes (`recorder/tests`, GoogleTest/CTest).
-- `ui/` — aplicação WinUI 3 (`TftVodRecorder.Ui`), lógica testável sem WinUI (`TftVodRecorder.Ui.Core`) e testes xUnit (`ui.tests`).
+- `ui/` — aplicação WinUI 3 (`TFTape.Ui`), lógica testável sem WinUI (`TFTape.Ui.Core`) e testes xUnit (`ui.tests`).
 - `.agents/SKILLS.md` — diretrizes de testes unitários e manutenção do git.
 - `docs/architecture.md` — visão da arquitetura.
 - `docs/e2e-validation.md` — checklist e registro da validação final no Windows com o cliente TFT real.
-- Plano: `/home/caio/.opencode/plan/tft-vod-recorder.md`.
+- Plano: `/home/caio/.opencode/plan/TFTape.md`.
 
 ## Build (Windows)
 ### Core (C++)
@@ -26,29 +26,29 @@ Esperado: **74 testes C++** passando.
 
 ### UI (WinUI 3)
 ```powershell
-dotnet restore ui/TftVodRecorder.Ui.sln
-dotnet build ui/TftVodRecorder.Ui.sln -c Release
+dotnet restore ui/TFTape.Ui.sln
+dotnet build ui/TFTape.Ui.sln -c Release
 ```
 O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft_window_rules.json` (se existir) e `tft_window_rules.sample.json` para a saída da UI. Se o core ainda não foi compilado, o build emite um aviso e a UI não encontra o gravador.
 
 ### Testes da UI (xUnit)
 ```powershell
-dotnet test ui/TftVodRecorder.Ui.sln -c Release
+dotnet test ui/TFTape.Ui.sln -c Release
 ```
 Esperado: **11 testes xUnit** passando.
 Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, exceções, `PropertyChanged` e o despachante injetado.
 
 Para usar um core em outro diretório:
 ```powershell
-dotnet build ui/TftVodRecorder.Ui.sln -c Release -p:RecorderBuildDir=C:\caminho\para\build\Release\
+dotnet build ui/TFTape.Ui.sln -c Release -p:RecorderBuildDir=C:\caminho\para\build\Release\
 ```
 Para publicar (também inclui os arquivos do core):
 ```powershell
-dotnet publish ui/TftVodRecorder.Ui/TftVodRecorder.Ui.csproj -c Release
+dotnet publish ui/TFTape.Ui/TFTape.Ui.csproj -c Release
 ```
 
 ## Logs do core
-- Arquivo: `%LOCALAPPDATA%\TftVodRecorder\logs\recorder.log` (com rotação: `recorder.log.1`, `.2`, `.3`; até 1 MB por arquivo).
+- Arquivo: `%LOCALAPPDATA%\TFTape\logs\recorder.log` (com rotação: `recorder.log.1`, `.2`, `.3`; até 1 MB por arquivo).
 - Registra carregamento das regras de janela, todas as janelas avaliadas (processo/classe/dimensões), regra que selecionou ou excluiu cada uma, motivo de falha/ambiguidade, início/fim do recorder e exceções fatais. Títulos de janelas só aparecem na janela selecionada e no resumo de ambiguidade.
 - Diagnósticos também ecoam no `stderr`, que a UI drena para evitar travamento por pipe cheio.
 
@@ -75,9 +75,9 @@ cmake -S recorder -B recorder/build -DTFT_BUILD_TESTS=ON
 cmake --build recorder/build --config Release
 ctest --test-dir recorder/build -C Release --output-on-failure
 
-dotnet restore ui/TftVodRecorder.Ui.sln
-dotnet build ui/TftVodRecorder.Ui.sln -c Release
-dotnet test ui/TftVodRecorder.Ui.sln -c Release --no-build
+dotnet restore ui/TFTape.Ui.sln
+dotnet build ui/TFTape.Ui.sln -c Release
+dotnet test ui/TFTape.Ui.sln -c Release --no-build
 ```
 
 > Status: validação concluída em 19/11/2026 no Windows; todos os casos do checklist passaram. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).

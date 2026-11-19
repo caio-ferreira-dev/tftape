@@ -14,7 +14,7 @@ TEST(OutputPath, SanitizeFilenameReplacesInvalidChars) {
 }
 
 TEST(OutputPath, EnsureDirectoryCreatesPath) {
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_test_out";
+    auto dir = fs::temp_directory_path() / "tftape_test_out";
     fs::remove_all(dir);
     std::string err;
     EXPECT_TRUE(OutputPath::EnsureDirectory(dir, &err)) << err;
@@ -23,7 +23,7 @@ TEST(OutputPath, EnsureDirectoryCreatesPath) {
 }
 
 TEST(OutputPath, MakeUniqueMp4PathAddsMp4AndUniqueness) {
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_test_unique";
+    auto dir = fs::temp_directory_path() / "tftape_test_unique";
     fs::create_directories(dir);
     auto p1 = OutputPath::MakeUniqueMp4Path(dir, "tft");
     EXPECT_EQ(p1.extension(), ".mp4");
@@ -71,7 +71,7 @@ TEST(OutputPath, EnsureDirectoryRejectsInvalidSyntaxAndExistingFile) {
     EXPECT_FALSE(OutputPath::EnsureDirectory("vods", &error));
     EXPECT_NE(error.find("absoluto"), std::string::npos) << error;
 
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_path_validation";
+    auto dir = fs::temp_directory_path() / "tftape_path_validation";
     fs::remove_all(dir);
     fs::create_directories(dir);
     auto file = dir / "file.mp4";

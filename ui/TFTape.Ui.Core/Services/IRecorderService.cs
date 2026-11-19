@@ -1,6 +1,6 @@
-using TftVodRecorder.Ui.Models;
+using TFTape.Ui.Models;
 
-namespace TftVodRecorder.Ui.Services;
+namespace TFTape.Ui.Services;
 
 public sealed record RecorderEvent(bool Ok, string Name, string Message, string? Path = null);
 

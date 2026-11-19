@@ -1,7 +1,7 @@
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
-namespace TftVodRecorder.Ui.Services;
+namespace TFTape.Ui.Services;
 
 public sealed class FolderPickerService
 {

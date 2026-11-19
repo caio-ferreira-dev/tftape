@@ -9,7 +9,7 @@ using tft::RecorderController;
 using tft::RecorderState;
 
 TEST(RecorderState, StartStopTransitions) {
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_state";
+    auto dir = fs::temp_directory_path() / "tftape_state";
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(true, "ok", (dir / "out.mp4").string());
@@ -23,7 +23,7 @@ TEST(RecorderState, StartStopTransitions) {
 }
 
 TEST(RecorderState, RejectsStartWhenAlreadyRecording) {
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_state2";
+    auto dir = fs::temp_directory_path() / "tftape_state2";
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(true, "ok", (dir / "out.mp4").string());
@@ -44,7 +44,7 @@ TEST(RecorderState, RejectsStopWhenIdle) {
 }
 
 TEST(RecorderState, ReportsErrorOnFailedStart) {
-    auto dir = fs::temp_directory_path() / "tft_vod_recorder_state3";
+    auto dir = fs::temp_directory_path() / "tftape_state3";
     fs::create_directories(dir);
     RecorderController c;
     c.SetStartHookResult(false, "Janela do TFT não encontrada");

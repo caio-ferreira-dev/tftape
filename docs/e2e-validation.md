@@ -1,4 +1,4 @@
-# Validação End-to-End — TFT VOD Recorder
+# Validação End-to-End — TFTape
 
 Este documento registra a validação final no Windows, com o cliente **Teamfight Tactics** real.
 Os testes unitários cobrem a lógica pura; esta checklist cobre captura WGC, WASAPI, Media Foundation,
@@ -15,7 +15,7 @@ mux MP4, protocolo JSON-lines e a UI WinUI 3 juntos.
 | Memória / disco | 16 GB RAM / NVMe |
 | Cliente | TFT exclusivo (não o cliente LoL) |
 | Core | `recorder/build/Release/recorder.exe` |
-| UI | `dotnet build/publish` de `ui/TftVodRecorder.Ui.sln` |
+| UI | `dotnet build/publish` de `ui/TFTape.Ui.sln` |
 | Opcional | `ffprobe` (ffmpeg) no `PATH` para inspecionar o MP4 |
 
 ## 2. Pré-requisitos
@@ -26,9 +26,9 @@ mux MP4, protocolo JSON-lines e a UI WinUI 3 juntos.
    cmake --build recorder/build --config Release
    ctest --test-dir recorder/build -C Release --output-on-failure
 
-   dotnet restore ui/TftVodRecorder.Ui.sln
-   dotnet build ui/TftVodRecorder.Ui.sln -c Release
-   dotnet test ui/TftVodRecorder.Ui.sln -c Release --no-build
+   dotnet restore ui/TFTape.Ui.sln
+   dotnet build ui/TFTape.Ui.sln -c Release
+   dotnet test ui/TFTape.Ui.sln -c Release --no-build
    ```
    Esperado: **74 testes C++** e **11 testes xUnit** passando.
 
@@ -102,7 +102,7 @@ Esperado:
 
 ## 5. Logs do core
 
-Arquivo: `%LOCALAPPDATA%\TftVodRecorder\logs\recorder.log` (rotação `.1`, `.2`, `.3`).
+Arquivo: `%LOCALAPPDATA%\TFTape\logs\recorder.log` (rotação `.1`, `.2`, `.3`).
 
 Checar:
 - Início/fim do recorder e exceções fatais.

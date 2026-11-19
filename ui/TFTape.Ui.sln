@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TftVodRecorder.Ui", "TftVodRecorder.Ui\TftVodRecorder.Ui.csproj", "{A2C2D6D2-5E5A-4E59-9E65-5A6D2A1F9B10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TFTape.Ui", "TFTape.Ui\TFTape.Ui.csproj", "{A2C2D6D2-5E5A-4E59-9E65-5A6D2A1F9B10}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TftVodRecorder.Ui.Core", "TftVodRecorder.Ui.Core\TftVodRecorder.Ui.Core.csproj", "{2C0D9F0A-6C7E-4D3A-9A75-4C5B8E4B4B0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TFTape.Ui.Core", "TFTape.Ui.Core\TFTape.Ui.Core.csproj", "{2C0D9F0A-6C7E-4D3A-9A75-4C5B8E4B4B0A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TftVodRecorder.Ui.Tests", "ui.tests\TftVodRecorder.Ui.Tests.csproj", "{9B7D0B6B-2D2D-4D8A-9F5B-6A1E5D1C6F2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TFTape.Ui.Tests", "ui.tests\TFTape.Ui.Tests.csproj", "{9B7D0B6B-2D2D-4D8A-9F5B-6A1E5D1C6F2E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

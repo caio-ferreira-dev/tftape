@@ -1,10 +1,10 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using TftVodRecorder.Ui.Services;
-using TftVodRecorder.Ui.ViewModels;
+using TFTape.Ui.Services;
+using TFTape.Ui.ViewModels;
 using WinRT.Interop;
 
-namespace TftVodRecorder.Ui;
+namespace TFTape.Ui;
 
 public sealed partial class MainWindow : Window
 {
