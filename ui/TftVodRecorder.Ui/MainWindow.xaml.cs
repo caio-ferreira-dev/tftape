@@ -1,3 +1,4 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using TftVodRecorder.Ui.Services;
 using TftVodRecorder.Ui.ViewModels;
@@ -13,7 +14,7 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
-        ViewModel = new RecorderViewModel(_recorderService);
+        ViewModel = new RecorderViewModel(_recorderService, new UiDispatcher(DispatcherQueue.GetForCurrentThread()));
         InitializeComponent();
         // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
         Closed += OnClosed;

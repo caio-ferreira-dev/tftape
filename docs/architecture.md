@@ -2,7 +2,7 @@
 
 ## Visão geral
 - **`recorder/` (C++)**: core de captura, áudio, encode e mux. Expõe controle via protocolo JSON-lines (stdin/stdout ou pipe nomeado).
-- **`ui/` (C# WinUI 3)**: interface gráfica para configurar e controlar gravações, iniciando/monitorando `recorder.exe`.
+- **`ui/` (C# WinUI 3)**: `TftVodRecorder.Ui` é a interface gráfica; `TftVodRecorder.Ui.Core` contém modelos, serviços e ViewModel sem dependência de WinUI; `ui.tests` cobre essa lógica com xUnit e um `IRecorderService` falso. A UI injeta um `IUiDispatcher` baseado em `DispatcherQueue`, permitindo testar o ViewModel sem inicializar a interface.
 
 ## Componentes principais
 - **Capture**: detecta a janela do TFT por regras configuráveis e captura apenas essa janela (WGC no Windows).

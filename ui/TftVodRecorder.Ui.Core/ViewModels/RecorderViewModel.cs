@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using Microsoft.UI.Dispatching;
 using TftVodRecorder.Ui.Models;
 using TftVodRecorder.Ui.Services;
 
@@ -21,7 +20,7 @@ public sealed class RelayCommand : ICommand
 public sealed class RecorderViewModel : INotifyPropertyChanged
 {
     private readonly IRecorderService _recorder;
-    private readonly DispatcherQueue _dispatcher;
+    private readonly IUiDispatcher _dispatcher;
     private bool _isRecording;
     private string _status = "Pronto";
     private string _outputDirectory = string.Empty;
@@ -34,10 +33,10 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     private string _error = string.Empty;
     private string _warning = string.Empty;
 
-    public RecorderViewModel(IRecorderService recorder)
+    public RecorderViewModel(IRecorderService recorder, IUiDispatcher? dispatcher = null)
     {
         _recorder = recorder;
-        _dispatcher = DispatcherQueue.GetForCurrentThread();
+        _dispatcher = dispatcher ?? new InlineUiDispatcher();
         _recorder.OnEvent += OnRecorderEvent;
         StartCommand = new RelayCommand(StartAsync, () => !IsRecording && !string.IsNullOrWhiteSpace(OutputDirectory));
         StopCommand = new RelayCommand(StopAsync, () => IsRecording);
@@ -89,12 +88,7 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
         catch (Exception ex) { Status = "Erro"; Error = ex.Message; }
     }
 
-    private void OnRecorderEvent(RecorderEvent e)
-    {
-        if (_dispatcher == null) { ApplyEvent(e); return; }
-        if (_dispatcher.HasThreadAccess) ApplyEvent(e);
-        else _dispatcher.TryEnqueue(() => ApplyEvent(e));
-    }
+    private void OnRecorderEvent(RecorderEvent e) => _dispatcher.Run(() => ApplyEvent(e));
 
     private void ApplyEvent(RecorderEvent e)
     {

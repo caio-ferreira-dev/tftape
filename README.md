@@ -9,7 +9,7 @@ Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Window
 
 ## Estrutura
 - `recorder/` — core C++ (CMake) e testes (`recorder/tests`, GoogleTest/CTest).
-- `ui/` — aplicação WinUI 3.
+- `ui/` — aplicação WinUI 3 (`TftVodRecorder.Ui`), lógica testável sem WinUI (`TftVodRecorder.Ui.Core`) e testes xUnit (`ui.tests`).
 - `.agents/SKILLS.md` — diretrizes de testes unitários e manutenção do git.
 - `docs/architecture.md` — visão da arquitetura.
 - Plano: `/home/caio/.opencode/plan/tft-vod-recorder.md`.
@@ -28,6 +28,12 @@ dotnet restore ui/TftVodRecorder.Ui.sln
 dotnet build ui/TftVodRecorder.Ui.sln -c Release
 ```
 O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft_window_rules.json` (se existir) e `tft_window_rules.sample.json` para a saída da UI. Se o core ainda não foi compilado, o build emite um aviso e a UI não encontra o gravador.
+
+### Testes da UI (xUnit)
+```powershell
+dotnet test ui/TftVodRecorder.Ui.sln -c Release
+```
+Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, exceções, `PropertyChanged` e o despachante injetado.
 
 Para usar um core em outro diretório:
 ```powershell
