@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <system_error>
 
 #include "output/RecordingSidecar.h"
 
@@ -32,9 +33,14 @@ std::string ReadAll(const fs::path& path) {
     return oss.str();
 }
 
+void RemoveDir(const fs::path& dir) {
+    std::error_code error;
+    fs::remove_all(dir, error); // best effort: nunca lança exceção no Windows.
+}
+
 fs::path UniqueDir(const std::string& name) {
     auto dir = fs::temp_directory_path() / name;
-    fs::remove_all(dir);
+    RemoveDir(dir);
     fs::create_directories(dir);
     return dir;
 }
@@ -63,7 +69,7 @@ TEST(RecordingSidecar, WritesExpectedJsonNextToMp4) {
     EXPECT_NE(json.find("\"fps\":60"), std::string::npos);
     EXPECT_NE(json.find("\"rounds\":[]"), std::string::npos);
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }
 
 TEST(RecordingSidecar, ReplacesPreviousSidecarAndLeavesNoTempFile) {
@@ -94,7 +100,7 @@ TEST(RecordingSidecar, ReplacesPreviousSidecarAndLeavesNoTempFile) {
     temporary += ".tmp";
     EXPECT_FALSE(fs::exists(temporary));
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }
 
 TEST(RecordingSidecar, CreatesParentDirectoryWhenNeeded) {
@@ -105,7 +111,7 @@ TEST(RecordingSidecar, CreatesParentDirectoryWhenNeeded) {
     ASSERT_TRUE(WriteRecordingSidecar(ValidData(), mp4, error)) << error;
     EXPECT_TRUE(fs::exists(SidecarPathFor(mp4)));
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }
 
 TEST(RecordingSidecar, RejectsIncompleteDataWithoutWritingFile) {
@@ -120,7 +126,7 @@ TEST(RecordingSidecar, RejectsIncompleteDataWithoutWritingFile) {
     EXPECT_FALSE(error.empty());
     EXPECT_FALSE(fs::exists(SidecarPathFor(mp4)));
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }
 
 TEST(RecordingSidecar, RejectsRoundBeyondDuration) {
@@ -137,7 +143,7 @@ TEST(RecordingSidecar, RejectsRoundBeyondDuration) {
     EXPECT_FALSE(WriteRecordingSidecar(data, mp4, error));
     EXPECT_NE(error.find("além da duração"), std::string::npos);
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }
 
 TEST(RecordingSidecar, EscapesQuotesBackslashesAndKeepsUtf8) {
@@ -155,5 +161,5 @@ TEST(RecordingSidecar, EscapesQuotesBackslashesAndKeepsUtf8) {
     EXPECT_NE(json.find("\\\\"), std::string::npos);
     EXPECT_NE(json.find("\xC3\xA1udio"), std::string::npos);
 
-    fs::remove_all(dir);
+    RemoveDir(dir);
 }

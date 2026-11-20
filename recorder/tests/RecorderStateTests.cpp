@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <system_error>
 
 #include "app/RecorderController.h"
 #include "output/RecordingSidecar.h"
@@ -87,7 +88,8 @@ TEST(RecorderState, RejectsNonAbsoluteOutputDirectory) {
 
 TEST(RecorderState, StopWritesSidecarAlongsideMp4) {
     auto dir = fs::temp_directory_path() / "tftape_sidecar_state_stop";
-    fs::remove_all(dir);
+    std::error_code cleanupError;
+    fs::remove_all(dir, cleanupError);
     fs::create_directories(dir);
 
     const auto mp4 = dir / "out.mp4";
@@ -105,17 +107,20 @@ TEST(RecorderState, StopWritesSidecarAlongsideMp4) {
     ASSERT_TRUE(fs::exists(sidecar));
     EXPECT_EQ(c.LastSidecarPath(), sidecar.string());
 
-    std::ifstream in(sidecar, std::ios::binary);
-    std::ostringstream oss;
-    oss << in.rdbuf();
-    EXPECT_NE(oss.str().find("\"rounds\":[]"), std::string::npos);
+    {
+        std::ifstream in(sidecar, std::ios::binary);
+        std::ostringstream oss;
+        oss << in.rdbuf();
+        EXPECT_NE(oss.str().find("\"rounds\":[]"), std::string::npos);
+    } // Fecha o arquivo antes de remover a pasta (no Windows o handle travaria o remove_all).
 
-    fs::remove_all(dir);
+    fs::remove_all(dir, cleanupError);
 }
 
 TEST(RecorderState, ShutdownAlsoWritesSidecar) {
     auto dir = fs::temp_directory_path() / "tftape_sidecar_state_shutdown";
-    fs::remove_all(dir);
+    std::error_code cleanupError;
+    fs::remove_all(dir, cleanupError);
     fs::create_directories(dir);
 
     const auto mp4 = dir / "out.mp4";
@@ -128,12 +133,13 @@ TEST(RecorderState, ShutdownAlsoWritesSidecar) {
     EXPECT_TRUE(c.ShouldExit());
     ASSERT_TRUE(fs::exists(tft::SidecarPathFor(mp4)));
 
-    fs::remove_all(dir);
+    fs::remove_all(dir, cleanupError);
 }
 
 TEST(RecorderState, FailedStartDoesNotWriteSidecar) {
     auto dir = fs::temp_directory_path() / "tftape_sidecar_state_failed";
-    fs::remove_all(dir);
+    std::error_code cleanupError;
+    fs::remove_all(dir, cleanupError);
     fs::create_directories(dir);
 
     const auto mp4 = dir / "out.mp4";
@@ -144,5 +150,5 @@ TEST(RecorderState, FailedStartDoesNotWriteSidecar) {
     EXPECT_FALSE(fs::exists(tft::SidecarPathFor(mp4)));
     EXPECT_TRUE(c.LastSidecarPath().empty());
 
-    fs::remove_all(dir);
+    fs::remove_all(dir, cleanupError);
 }
