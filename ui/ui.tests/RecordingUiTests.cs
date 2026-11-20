@@ -179,6 +179,30 @@ public sealed class RecordingUiTests
         Assert.Contains(nameof(RecorderViewModel.Microphone), changed);
     }
 
+    [Fact]
+    public void LoadsLastOutputDirectoryOnStartup()
+    {
+        var store = new InMemoryOutputDirectoryStore(@"C:\UltimaPasta");
+        var vm = new RecorderViewModel(new FakeRecorderService(), outputDirectoryStore: store);
+
+        Assert.Equal(@"C:\UltimaPasta", vm.OutputDirectory);
+        Assert.True(vm.StartCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void SavesOutputDirectoryWhenItChanges()
+    {
+        var store = new InMemoryOutputDirectoryStore();
+        var vm = new RecorderViewModel(new FakeRecorderService(), outputDirectoryStore: store);
+
+        vm.OutputDirectory = @"C:\Vods";
+        vm.OutputDirectory = @"C:\Vods";
+        vm.OutputDirectory = "   ";
+
+        Assert.Equal(@"C:\Vods", store.Load());
+        Assert.Equal(1, store.SaveCount);
+    }
+
     private sealed class RecordingUiTests_Dispatcher : IUiDispatcher
     {
         private readonly List<Action> _actions = new();
