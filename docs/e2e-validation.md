@@ -30,7 +30,7 @@ mux MP4, protocolo JSON-lines e a UI WinUI 3 juntos.
    dotnet build ui/TFTape.Ui.sln -c Release
    dotnet test ui/TFTape.Ui.sln -c Release --no-build
    ```
-   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; os totais atuais são 84 C++ e 15 xUnit após a persistência da última pasta e o sidecar de metadados).
+   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; os totais atuais são 84 C++ e 27 xUnit após a persistência da última pasta, o sidecar e a biblioteca de VODs).
 
 2. Abra o TFT e deixe a janela visível. Evite janelas do cliente LoL com título/processo semelhante durante os testes positivos — elas são usadas nos casos de ambiguidade.
 
@@ -96,6 +96,18 @@ Verificações por perfil:
 
 O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`; a UI expõe esses valores no ViewModel para o visualizador de VODs.
 
+### 3.5 Biblioteca de VODs (aba VODs)
+
+| ID | Cenário | Resultado esperado | Resultado | Observação |
+|---|---|---|---|---|
+| D1 | Abrir a aba **VODs** com a pasta de gravação já preenchida | Lista mostra os MP4 da pasta, mais recentes primeiro; primeiro VOD selecionado e tocando | | Sem clicar em nada |
+| D2 | Clicar em outro VOD da lista | Player troca de vídeo; título e metadados acompanham a seleção | | |
+| D3 | VOD com sidecar válido | Linha mostra data, perfil, duração e quantidade de rounds; sem aviso amarelo | | rounds ainda vazio nesta fase |
+| D4 | MP4 sem sidecar ou com `.json` corrompido | VOD continua na lista, com aviso amarelo "Metadados inválidos" quando houver sidecar quebrado | | **Não pode travar a UI** |
+| D5 | Trocar a pasta pelo botão **Escolher pasta** e clicar em **Atualizar** | Lista recarrega; nova pasta é lembrada ao fechar/reabrir o app | | `vod_directory.txt` separado de `output_directory.txt` |
+| D6 | Fechar a janela com um VOD tocando | Player é liberado e o arquivo não fica travado; core recebe `shutdown` | | Importante no Windows |
+| D7 | Verificar botões de rounds | Com `rounds: []`, aparece "Nenhum round detectado nesta gravação." e nenhum botão | | Botões só aparecerão na fase 2 |
+
 ## 4. Inspeção do MP4
 
 Com `ffprobe` disponível:
@@ -125,11 +137,12 @@ Checar:
 
 ## 6. Critérios de aceite
 
-- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (10 testes C++ e 4 testes xUnit adicionados depois).
+- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (10 testes C++ e 16 testes xUnit adicionados depois).
 - [x] V1–V4: MP4 H.264 válido, resolução/fps/bitrate corretos.
 - [x] A1–A7: áudio do jogo sempre presente quando habilitado; falhas opcionais viram aviso; falha do jogo aborta.
 - [x] R1–R9: nenhuma captura indevida, finalização segura e mensagens claras.
-- [ ] S1–S5: sidecar gravado em stop/shutdown, JSON íntegro e aviso em caso de falha.
+- [ ] S1–S5: sidecar gravado em stop/shutdown, JSON íntegro e aviso em caso de falha. Geração básica confirmada manualmente; checklist formal pendente.
+- [ ] D1–D7: aba VODs lista, reproduz, troca de vídeo, tolera sidecar inválido e libera o player ao fechar.
 - [x] `ffprobe` sem erros e sincronia A/V aceitável.
 - [x] Logs completos e legíveis.
 
@@ -139,8 +152,8 @@ Checar:
 |---|---|
 | Data da validação | 19/11/2026 |
 | Windows / build | Windows 10 10.0.26100.9974 (24H2) |
-| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 do sidecar ficaram pendentes para a próxima validação no Windows. |
+| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 (sidecar) e D1–D7 (aba VODs) ficaram pendentes para a próxima validação no Windows. |
 | Arquivos MP4 de referência | MP4 dos perfis V1–V4, conferidos na UI e inspecionados com `ffprobe` |
 | Exceções documentadas | Nenhuma |
 
-Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. A seção 3.4 e os casos S1–S5 foram acrescentados depois com a feature de sidecar e ainda precisam de execução no Windows.
+Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. As seções 3.4 e 3.5 e os casos S1–S5/D1–D7 foram acrescentados depois com as features de sidecar e biblioteca de VODs e ainda precisam de execução no Windows.
