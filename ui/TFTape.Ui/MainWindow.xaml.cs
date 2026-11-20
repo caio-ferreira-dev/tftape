@@ -36,12 +36,13 @@ public sealed partial class MainWindow : Window
 
         VodLibrary.PlayRequested += OnPlayRequested;
         VodLibrary.SeekRequested += OnSeekRequested;
-        Loaded += OnLoaded;
+        // Window não tem evento Loaded no WinUI 3: usa o elemento raiz do conteúdo XAML.
+        if (Content is FrameworkElement root) root.Loaded += OnRootLoaded;
         // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
         Closed += OnClosed;
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e) => await VodLibrary.RefreshAsync();
+    private async void OnRootLoaded(object sender, RoutedEventArgs e) => await VodLibrary.RefreshAsync();
 
     private async void OnTabChanged(object sender, SelectionChangedEventArgs e)
     {
