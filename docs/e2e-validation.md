@@ -30,7 +30,7 @@ mux MP4, protocolo JSON-lines e a UI WinUI 3 juntos.
    dotnet build ui/TFTape.Ui.sln -c Release
    dotnet test ui/TFTape.Ui.sln -c Release --no-build
    ```
-   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; o total atual é 13 xUnit após a persistência da última pasta).
+   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; o total atual é 14 xUnit após a persistência da última pasta).
 
 2. Abra o TFT e deixe a janela visível. Evite janelas do cliente LoL com título/processo semelhante durante os testes positivos — elas são usadas nos casos de ambiguidade.
 
@@ -113,7 +113,7 @@ Checar:
 
 ## 6. Critérios de aceite
 
-- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (2 testes adicionados depois).
+- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (3 testes adicionados depois).
 - [x] V1–V4: MP4 H.264 válido, resolução/fps/bitrate corretos.
 - [x] A1–A7: áudio do jogo sempre presente quando habilitado; falhas opcionais viram aviso; falha do jogo aborta.
 - [x] R1–R9: nenhuma captura indevida, finalização segura e mensagens claras.
