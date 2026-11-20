@@ -10,7 +10,6 @@ Aplicativo para gravar **somente a janela do Teamfight Tactics (TFT)** no Window
 ## Estrutura
 - `recorder/` — core C++ (CMake) e testes (`recorder/tests`, GoogleTest/CTest).
 - `ui/` — aplicação WinUI 3 (`TFTape.Ui`), lógica testável sem WinUI (`TFTape.Ui.Core`) e testes xUnit (`ui.tests`).
-- `.agents/SKILLS.md` — diretrizes de testes unitários e manutenção do git.
 - `docs/architecture.md` — visão da arquitetura.
 - `docs/e2e-validation.md` — checklist e registro da validação final no Windows com o cliente TFT real.
 - Plano: `/home/caio/.opencode/plan/TFTape.md`.
