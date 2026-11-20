@@ -14,7 +14,10 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
-        ViewModel = new RecorderViewModel(_recorderService, new UiDispatcher(DispatcherQueue.GetForCurrentThread()));
+        ViewModel = new RecorderViewModel(
+            _recorderService,
+            new UiDispatcher(DispatcherQueue.GetForCurrentThread()),
+            new LocalFileOutputDirectoryStore());
         InitializeComponent();
         // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
         Closed += OnClosed;

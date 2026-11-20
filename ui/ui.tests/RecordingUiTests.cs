@@ -179,6 +179,51 @@ public sealed class RecordingUiTests
         Assert.Contains(nameof(RecorderViewModel.Microphone), changed);
     }
 
+    [Fact]
+    public void LoadsLastOutputDirectoryOnStartup()
+    {
+        var store = new InMemoryOutputDirectoryStore(@"C:\UltimaPasta");
+        var vm = new RecorderViewModel(new FakeRecorderService(), outputDirectoryStore: store);
+
+        Assert.Equal(@"C:\UltimaPasta", vm.OutputDirectory);
+        Assert.True(vm.StartCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void SavesOutputDirectoryWhenItChanges()
+    {
+        var store = new InMemoryOutputDirectoryStore();
+        var vm = new RecorderViewModel(new FakeRecorderService(), outputDirectoryStore: store);
+
+        vm.OutputDirectory = @"C:\Vods";
+        vm.OutputDirectory = @"C:\Vods";
+        vm.OutputDirectory = "   ";
+
+        Assert.Equal(@"C:\Vods", store.Load());
+        Assert.Equal(1, store.SaveCount);
+    }
+
+    [Fact]
+    public void LocalFileStorePersistsAndReloadsOutputDirectory()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "tftape_store_" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new LocalFileOutputDirectoryStore(Path.Combine(dir, "output_directory.txt"));
+
+            Assert.Equal(string.Empty, store.Load());
+            store.Save(@"C:\Vods\TFT");
+            Assert.Equal(@"C:\Vods\TFT", store.Load());
+
+            store.Save("   ");
+            Assert.Equal(@"C:\Vods\TFT", store.Load());
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+
     private sealed class RecordingUiTests_Dispatcher : IUiDispatcher
     {
         private readonly List<Action> _actions = new();

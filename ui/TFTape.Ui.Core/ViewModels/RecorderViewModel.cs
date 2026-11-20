@@ -21,9 +21,10 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
 {
     private readonly IRecorderService _recorder;
     private readonly IUiDispatcher _dispatcher;
+    private readonly IOutputDirectoryStore _outputDirectoryStore;
     private bool _isRecording;
     private string _status = "Pronto";
-    private string _outputDirectory = string.Empty;
+    private string _outputDirectory;
     private string _resolution = "720p";
     private string _fps = "30";
     private bool _gameAudio = true;
@@ -33,10 +34,12 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     private string _error = string.Empty;
     private string _warning = string.Empty;
 
-    public RecorderViewModel(IRecorderService recorder, IUiDispatcher? dispatcher = null)
+    public RecorderViewModel(IRecorderService recorder, IUiDispatcher? dispatcher = null, IOutputDirectoryStore? outputDirectoryStore = null)
     {
         _recorder = recorder;
         _dispatcher = dispatcher ?? new InlineUiDispatcher();
+        _outputDirectoryStore = outputDirectoryStore ?? new InMemoryOutputDirectoryStore();
+        _outputDirectory = _outputDirectoryStore.Load() ?? string.Empty;
         _recorder.OnEvent += OnRecorderEvent;
         StartCommand = new RelayCommand(StartAsync, () => !IsRecording && !string.IsNullOrWhiteSpace(OutputDirectory));
         StopCommand = new RelayCommand(StopAsync, () => IsRecording);
@@ -50,7 +53,19 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
 
     public bool IsRecording { get => _isRecording; private set { if (_isRecording == value) return; _isRecording = value; OnPropertyChanged(); StartCommand.Raise(); StopCommand.Raise(); } }
     public string Status { get => _status; private set { if (_status == value) return; _status = value; OnPropertyChanged(); } }
-    public string OutputDirectory { get => _outputDirectory; set { if (_outputDirectory == value) return; _outputDirectory = value; OnPropertyChanged(); StartCommand.Raise(); } }
+    public string OutputDirectory
+    {
+        get => _outputDirectory;
+        set
+        {
+            var next = value ?? string.Empty;
+            if (_outputDirectory == next) return;
+            _outputDirectory = next;
+            OnPropertyChanged();
+            StartCommand.Raise();
+            _outputDirectoryStore.Save(next);
+        }
+    }
     public string Resolution { get => _resolution; set { if (_resolution == value) return; _resolution = value; OnPropertyChanged(); } }
     public string Fps { get => _fps; set { if (_fps == value) return; _fps = value; OnPropertyChanged(); } }
     public bool GameAudio { get => _gameAudio; set { if (_gameAudio == value) return; _gameAudio = value; OnPropertyChanged(); } }

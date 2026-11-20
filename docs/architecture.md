@@ -11,6 +11,7 @@
 - **Output**: valida a sintaxe do caminho (absoluto, sem `..`, caracteres inválidos ou nomes reservados do Windows), confirma permissão de escrita, gera nomes únicos `.mp4` e garante finalização segura do arquivo.
 - **Logger/Clock**: `util/Clock.h` fornece relógio do sistema e relógio falso para testes; `util/Logger.cpp` grava diagnósticos no `stderr` e em arquivo rotacionado em `%LOCALAPPDATA%\TFTape\logs`. A detecção registra candidatos avaliados, regra de seleção/exclusão e motivo de falha/ambiguidade.
 - **Protocol/App**: máquina de estados da gravação e contrato de comandos/eventos com a UI.
+- **Preferências da UI**: `IOutputDirectoryStore` (em `TFTape.Ui.Core`) abstrai a persistência da última pasta de VODs; `LocalFileOutputDirectoryStore` grava `%LOCALAPPDATA%\TFTape\output_directory.txt`, mantendo o ViewModel testável e compatível com o app WinUI 3 unpackaged (sem identidade de pacote, onde `ApplicationData` não funciona).
 - **Build/empacotamento**: o build da UI copia `recorder.exe` (padrão: `recorder/build/Release`) e as regras de janela (`recorder/config`) para a saída e para o publish, via `RecorderBuildDir`/`RecorderConfigDir` no `.csproj`. O processo do core roda com `WorkingDirectory` na pasta do próprio executável, então encontra `tft_window_rules.json` ao lado dele.
 
 ## Plataformas
@@ -18,6 +19,6 @@
 - **Testes unitários de lógica:** módulos puros (regras, settings, paths, protocolo, estado) são portáveis e testáveis independentemente das APIs de hardware/UI.
 
 ## Validação
-- **Automática:** 74 testes C++ (GoogleTest/CTest) e 11 testes xUnit, executados com os comandos do `README.md`.
+- **Automática:** 74 testes C++ (GoogleTest/CTest) e 14 testes xUnit, executados com os comandos do `README.md`.
 - **End-to-end:** checklist e registro em [`e2e-validation.md`](e2e-validation.md), executados manualmente no Windows com o cliente TFT real (captura WGC, WASAPI, Media Foundation, mux MP4, protocolo e UI juntos).
 - Como as APIs de captura/áudio/encode e a WinUI 3 não existem no ambiente WSL/Linux, a validação E2E foi executada no Windows e seus resultados estão registrados no checklist; a documentação final incorpora esse registro.

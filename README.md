@@ -34,7 +34,7 @@ O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft
 ```powershell
 dotnet test ui/TFTape.Ui.sln -c Release
 ```
-Esperado: **11 testes xUnit** passando.
+Esperado: **14 testes xUnit** passando.
 Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, exceções, `PropertyChanged` e o despachante injetado.
 
 Para usar um core em outro diretório:
@@ -54,6 +54,7 @@ dotnet publish ui/TFTape.Ui/TFTape.Ui.csproj -c Release
 ## Comportamento
 - Comandos da UI são JSON-lines validados de forma estrita: JSON malformado, tipo errado, chave desconhecida/duplicada ou valor inválido (ex.: `fps: "45"`) geram erro detalhado no evento `error`, sem aplicar valores padrão silenciosamente. Escapes Unicode (`\uXXXX`) enviados pelo .NET são decodificados corretamente (pastas com acentos funcionam).
 - A pasta de destino precisa ser absoluta e válida no Windows (sem `..`, caracteres reservados ou nomes como `CON`); o core verifica a escrita antes de iniciar.
+- A última pasta utilizada é lembrada entre execuções e já aparece preenchida na próxima abertura da UI (`%LOCALAPPDATA%\TFTape\output_directory.txt`).
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
 - Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
