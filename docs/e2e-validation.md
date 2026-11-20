@@ -30,7 +30,7 @@ mux MP4, protocolo JSON-lines e a UI WinUI 3 juntos.
    dotnet build ui/TFTape.Ui.sln -c Release
    dotnet test ui/TFTape.Ui.sln -c Release --no-build
    ```
-   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; o total atual é 14 xUnit após a persistência da última pasta).
+   Esperado: **74 testes C++** e **11 testes xUnit** passando (na data da validação; os totais atuais são 84 C++ e 15 xUnit após a persistência da última pasta e o sidecar de metadados).
 
 2. Abra o TFT e deixe a janela visível. Evite janelas do cliente LoL com título/processo semelhante durante os testes positivos — elas são usadas nos casos de ambiguidade.
 
@@ -84,6 +84,18 @@ Verificações por perfil:
 | R8 | Iniciar com `output_dir` relativo/inválido via protocolo | Erro detalhado, sem gravar | OK | JSON via stdin validado |
 | R9 | JSON malformado/tipo errado via stdin | Evento `error` com mensagem detalhada | OK | JSON malformado e tipo errado validados |
 
+### 3.4 Sidecar de metadados
+
+| ID | Cenário | Resultado esperado | Resultado | Observação |
+|---|---|---|---|---|
+| S1 | Gravar ~10 s e parar pelo botão **Parar** | Além do MP4, existe `<arquivo>.mp4.tftape.json` com `rounds: []`, `durationMs` coerente e `createdAtUtc` válido | | |
+| S2 | Fechar a UI durante a gravação | `shutdown` finaliza o MP4 **e** grava o sidecar | | Mesmo caminho R4 |
+| S3 | Pasta com acento | Nome do sidecar e conteúdo JSON legíveis, sem mojibake | | Mesmo caminho R6 |
+| S4 | Tornar a pasta de destino somente leitura após iniciar | Se o sidecar falhar, aparece aviso amarelo e o MP4 permanece tocável | | Ajustar permissão depois |
+| S5 | Abrir o `.tftape.json` em editor | JSON único, sem arquivo `.tmp` residual e com `schemaVersion: 1` | | |
+
+O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`; a UI expõe esses valores no ViewModel para o visualizador de VODs.
+
 ## 4. Inspeção do MP4
 
 Com `ffprobe` disponível:
@@ -113,10 +125,11 @@ Checar:
 
 ## 6. Critérios de aceite
 
-- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (3 testes adicionados depois).
+- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (10 testes C++ e 4 testes xUnit adicionados depois).
 - [x] V1–V4: MP4 H.264 válido, resolução/fps/bitrate corretos.
 - [x] A1–A7: áudio do jogo sempre presente quando habilitado; falhas opcionais viram aviso; falha do jogo aborta.
 - [x] R1–R9: nenhuma captura indevida, finalização segura e mensagens claras.
+- [ ] S1–S5: sidecar gravado em stop/shutdown, JSON íntegro e aviso em caso de falha.
 - [x] `ffprobe` sem erros e sincronia A/V aceitável.
 - [x] Logs completos e legíveis.
 
@@ -126,8 +139,8 @@ Checar:
 |---|---|
 | Data da validação | 19/11/2026 |
 | Windows / build | Windows 10 10.0.26100.9974 (24H2) |
-| Resultado geral | OK — todos os casos (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram |
+| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 do sidecar ficaram pendentes para a próxima validação no Windows. |
 | Arquivos MP4 de referência | MP4 dos perfis V1–V4, conferidos na UI e inspecionados com `ffprobe` |
 | Exceções documentadas | Nenhuma |
 
-Registro fechado em 19/11/2026 com todos os casos marcados como `OK`.
+Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. A seção 3.4 e os casos S1–S5 foram acrescentados depois com a feature de sidecar e ainda precisam de execução no Windows.

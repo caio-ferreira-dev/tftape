@@ -9,14 +9,18 @@
 #include "audio/AudioMixer.h"
 #include "capture/WgcCaptureSource.h"
 #include "encode/IMp4Writer.h"
+#include "output/RecordingSidecar.h"
 #include "output/RecordingSettings.h"
+#include "util/Clock.h"
 
 namespace tft {
 
 class RecordingSession {
 public:
-    // Injeção opcional do writer (útil para testes/integração); por padrão usa MfMp4Writer.
-    explicit RecordingSession(std::shared_ptr<IMp4Writer> writer = nullptr);
+    // Injeção opcional das dependências (útil para testes/integração).
+    explicit RecordingSession(std::shared_ptr<IMp4Writer> writer = nullptr,
+                              std::shared_ptr<ISteadyClock> steady_clock = nullptr,
+                              std::shared_ptr<IClock> system_clock = nullptr);
     ~RecordingSession();
 
     /// `warnings` recebe avisos de fontes opcionais indisponíveis (a gravação segue).
@@ -26,6 +30,8 @@ public:
 
     bool IsRunning() const { return running_.load(); }
     const std::string& OutputPath() const { return output_path_; }
+    /// Preenchido após Stop() com os dados que o controlador usa para gravar o sidecar.
+    const RecordingSidecarData& Summary() const { return summary_; }
 
 private:
     void RunVideoLoop();
@@ -39,6 +45,11 @@ private:
     std::thread audio_thread_;
     RecordingSettings settings_{};
     std::string output_path_;
+    std::shared_ptr<ISteadyClock> steady_clock_;
+    std::shared_ptr<IClock> system_clock_;
+    SteadyTimePoint start_steady_{};
+    ClockTimePoint start_wall_{};
+    RecordingSidecarData summary_;
 
     WgcCaptureSource capture_;
     std::shared_ptr<IMp4Writer> writer_;
@@ -47,7 +58,6 @@ private:
     std::shared_ptr<class IAudioSource> sys_src_;
     std::shared_ptr<class IAudioSource> mic_src_;
 
-    int64_t start_time_100ns_ = 0;
     int64_t last_video_100ns_ = 0;
     std::string last_error_;
 };

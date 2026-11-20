@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -24,17 +25,21 @@ using Microsoft::WRL::ComPtr;
 
 namespace tft {
 
-RecordingSession::RecordingSession(std::shared_ptr<IMp4Writer> writer)
-    : writer_(writer ? std::move(writer) : std::make_shared<MfMp4Writer>()) {}
+RecordingSession::RecordingSession(std::shared_ptr<IMp4Writer> writer,
+                                   std::shared_ptr<ISteadyClock> steady_clock,
+                                   std::shared_ptr<IClock> system_clock)
+    : writer_(writer ? std::move(writer) : std::make_shared<MfMp4Writer>()),
+      steady_clock_(steady_clock ? std::move(steady_clock)
+                                 : std::make_shared<SteadyClock>()),
+      system_clock_(system_clock ? std::move(system_clock)
+                                 : std::make_shared<SystemClock>()) {}
 
 RecordingSession::~RecordingSession() { std::string e; Stop(e); }
 
 #if defined(_WIN32)
 namespace {
-int64_t Now100ns() {
-    FILETIME ft; GetSystemTimeAsFileTime(&ft);
-    ULARGE_INTEGER uli; uli.LowPart = ft.dwLowDateTime; uli.HighPart = ft.dwHighDateTime;
-    return static_cast<int64_t>(uli.QuadPart);
+int64_t ElapsedSinceStart(const ISteadyClock& clock, SteadyTimePoint start) {
+    return Elapsed100ns(clock, start);
 }
 
 // Conversão simples BGRA -> NV12 (CPU) com escala nearest-neighbor para resolução alvo.
@@ -158,7 +163,8 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
         sys_src_.reset();
     }
 
-    start_time_100ns_ = Now100ns();
+    start_wall_ = system_clock_->Now();
+    start_steady_ = steady_clock_->Now();
     last_video_100ns_ = 0;
     running_ = true;
     video_thread_ = std::thread([this]() { RunVideoLoop(); });
@@ -168,6 +174,10 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
 
 bool RecordingSession::Stop(std::string& error) {
     if (!running_ && !video_thread_.joinable() && !audio_thread_.joinable()) return true;
+
+    // Duração medida no mesmo relógio usado pelos timestamps de vídeo/áudio.
+    const auto duration100ns = ElapsedSinceStart(*steady_clock_, start_steady_);
+
     stop_requested_ = true;
     running_ = false;
     if (audio_thread_.joinable()) audio_thread_.join();
@@ -176,6 +186,16 @@ bool RecordingSession::Stop(std::string& error) {
     capture_.Stop();
     if (!writer_->Finalize()) { error = writer_->LastError(); writer_->Close(); return false; }
     writer_->Close();
+
+    const auto profile = settings_.ToProfile();
+    summary_ = RecordingSidecarData{};
+    summary_.videoFile = std::filesystem::path(output_path_).filename().string();
+    summary_.createdAtUtc = FormatUtcIso8601(start_wall_);
+    summary_.durationMs = duration100ns / 10'000; // 100 ns -> ms
+    summary_.resolution = ToString(settings_.resolution);
+    summary_.fps = profile.fps;
+    // Fase 2 (ROI/HUD) preencherá summary_.rounds.
+    summary_.rounds.clear();
     return true;
 }
 
@@ -186,7 +206,7 @@ void RecordingSession::RunVideoLoop() {
         std::vector<uint8_t> bgra, nv12;
 
         while (!stop_requested_) {
-            int64_t now = Now100ns() - start_time_100ns_;
+            int64_t now = ElapsedSinceStart(*steady_clock_, start_steady_);
             if (now - last_video_100ns_ >= frameDur) {
                 last_video_100ns_ += frameDur;
                 if (last_video_100ns_ < now - frameDur) last_video_100ns_ = now; // evita acúmulo grande
@@ -206,7 +226,7 @@ void RecordingSession::RunAudioLoop() {
         std::vector<uint8_t> audioBuf(48000 * 2 * 2 / 100);
         int64_t last_audio = 0;
         while (!stop_requested_) {
-            int64_t now = Now100ns() - start_time_100ns_;
+            int64_t now = ElapsedSinceStart(*steady_clock_, start_steady_);
             if (now - last_audio >= audioChunk) {
                 last_audio += audioChunk;
                 // limita catch-up para evitar rajadas (ruído/estalos) sob carga

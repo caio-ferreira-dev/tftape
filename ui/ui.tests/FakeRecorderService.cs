@@ -36,9 +36,10 @@ internal sealed class FakeRecorderService : IRecorderService
         return Task.CompletedTask;
     }
 
-    public void Raise(bool ok, string name, string message = "", string? path = null)
+    public void Raise(bool ok, string name, string message = "", string? path = null,
+                      string? sidecarPath = null, long? durationMs = null)
     {
-        var e = new RecorderEvent(ok, name, message, path);
+        var e = new RecorderEvent(ok, name, message, path, sidecarPath, durationMs);
         _raised.Add(e);
         OnEvent?.Invoke(e);
     }

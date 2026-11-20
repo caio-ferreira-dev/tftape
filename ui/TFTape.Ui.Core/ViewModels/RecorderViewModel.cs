@@ -31,6 +31,8 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     private bool _systemAudio;
     private bool _microphone;
     private string _lastFile = string.Empty;
+    private string _lastSidecar = string.Empty;
+    private long? _lastDurationMs;
     private string _error = string.Empty;
     private string _warning = string.Empty;
 
@@ -72,6 +74,8 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     public bool SystemAudio { get => _systemAudio; set { if (_systemAudio == value) return; _systemAudio = value; OnPropertyChanged(); } }
     public bool Microphone { get => _microphone; set { if (_microphone == value) return; _microphone = value; OnPropertyChanged(); } }
     public string LastFile { get => _lastFile; private set { if (_lastFile == value) return; _lastFile = value; OnPropertyChanged(); } }
+    public string LastSidecar { get => _lastSidecar; private set { if (_lastSidecar == value) return; _lastSidecar = value; OnPropertyChanged(); } }
+    public long? LastDurationMs { get => _lastDurationMs; private set { if (_lastDurationMs == value) return; _lastDurationMs = value; OnPropertyChanged(); } }
     public string Error { get => _error; private set { if (_error == value) return; _error = value; OnPropertyChanged(); } }
     public string Warning { get => _warning; private set { if (_warning == value) return; _warning = value; OnPropertyChanged(); } }
 
@@ -112,6 +116,8 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
             IsRecording = true;
             Status = "Gravando (TFT)";
             LastFile = e.Path ?? "";
+            LastSidecar = string.Empty;
+            LastDurationMs = null;
             Error = string.Empty;
         }
         else if (e.Name == "warning" && e.Ok)
@@ -126,6 +132,8 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
             Warning = string.Empty;
             Error = string.Empty;
             if (!string.IsNullOrEmpty(e.Path)) LastFile = e.Path;
+            if (!string.IsNullOrEmpty(e.SidecarPath)) LastSidecar = e.SidecarPath;
+            if (e.DurationMs.HasValue) LastDurationMs = e.DurationMs;
         }
         else if (!e.Ok)
         {

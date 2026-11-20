@@ -90,6 +90,20 @@ public sealed class RecordingUiTests
     }
 
     [Fact]
+    public void StoppedEventExposesSidecarAndDuration()
+    {
+        var service = new FakeRecorderService();
+        var vm = new RecorderViewModel(service);
+
+        service.Raise(true, "recording_started", "", @"C:\Vods\final.mp4");
+        service.Raise(true, "recording_stopped", "Gravação finalizada", @"C:\Vods\final.mp4",
+                      @"C:\Vods\final.mp4.tftape.json", 93210);
+
+        Assert.Equal(@"C:\Vods\final.mp4.tftape.json", vm.LastSidecar);
+        Assert.Equal(93210L, vm.LastDurationMs);
+    }
+
+    [Fact]
     public void FailedEventSetsErrorState()
     {
         var service = new FakeRecorderService();

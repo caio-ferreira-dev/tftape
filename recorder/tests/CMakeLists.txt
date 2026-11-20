@@ -13,6 +13,7 @@ add_executable(recorder_tests
   WindowRulesConfigTests.cpp
   OutputPathTests.cpp
   RecordingSettingsTests.cpp
+  RecordingSidecarTests.cpp
   CommandProtocolTests.cpp
   RecorderStateTests.cpp
   PcmStreamBufferTests.cpp

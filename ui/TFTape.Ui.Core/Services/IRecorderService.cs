@@ -2,7 +2,13 @@ using TFTape.Ui.Models;
 
 namespace TFTape.Ui.Services;
 
-public sealed record RecorderEvent(bool Ok, string Name, string Message, string? Path = null);
+public sealed record RecorderEvent(
+    bool Ok,
+    string Name,
+    string Message,
+    string? Path = null,
+    string? SidecarPath = null,
+    long? DurationMs = null);
 
 public interface IRecorderService
 {

@@ -208,7 +208,13 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
                     var name = root.TryGetProperty("event", out var np) ? np.GetString() ?? "event" : "event";
                     var msg = root.TryGetProperty("message", out var mp) ? mp.GetString() ?? "" : "";
                     var path = root.TryGetProperty("path", out var pp) ? pp.GetString() : null;
-                    OnEvent?.Invoke(new RecorderEvent(ok, name, msg, path));
+                    var sidecarPath = root.TryGetProperty("sidecar_path", out var sp) ? sp.GetString() : null;
+                    long? durationMs = null;
+                    if (root.TryGetProperty("duration_ms", out var dp) && dp.TryGetInt64(out var parsedDuration))
+                    {
+                        durationMs = parsedDuration;
+                    }
+                    OnEvent?.Invoke(new RecorderEvent(ok, name, msg, path, sidecarPath, durationMs));
                 }
                 catch
                 {

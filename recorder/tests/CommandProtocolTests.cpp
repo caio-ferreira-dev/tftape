@@ -55,6 +55,16 @@ TEST(CommandProtocol, EventSerializesJsonLine) {
     EXPECT_NE(j.find("a.mp4"), std::string::npos);
 }
 
+TEST(CommandProtocol, EventSerializesOptionalSidecarFields) {
+    auto e = CommandProtocol::Ok("recording_stopped", "ok", "C:/vods/a.mp4");
+    e.sidecar_path = "C:/vods/a.mp4.tftape.json";
+    e.duration_ms = 93210;
+
+    const auto json = e.ToJsonLine();
+    EXPECT_NE(json.find("\"sidecar_path\":\"C:/vods/a.mp4.tftape.json\""), std::string::npos);
+    EXPECT_NE(json.find("\"duration_ms\":93210"), std::string::npos);
+}
+
 TEST(CommandProtocol, RejectsMalformedJson) {
     const char* invalid[] = {
         "{\"cmd\":\"start\"",                    // falta '}'
