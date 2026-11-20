@@ -1,10 +1,12 @@
 #include "app/RecorderController.h"
 
 #include <filesystem>
+#include <utility>
 
 #include "app/RecordingSession.h"
 #include "capture/TftWindowFinder.h"
 #include "output/OutputPath.h"
+#include "output/RecordingSidecar.h"
 #include "util/Logger.h"
 
 namespace tft {
@@ -15,11 +17,44 @@ RecorderController::~RecorderController() {
     FinalizeActiveRecording(ignored);
 }
 
-bool RecorderController::FinalizeActiveRecording(std::string& error) {
+bool RecorderController::WriteLastSidecar(std::int64_t durationMs,
+                                          const std::vector<RoundMarker>& rounds,
+                                          std::vector<std::string>* warnings) {
+    if (!has_last_recording_ || last_output_path_.empty()) return true;
+
+    RecordingSidecarData data;
+    data.videoFile = std::filesystem::path(last_output_path_).filename().string();
+    data.createdAtUtc = FormatUtcIso8601(last_started_at_);
+    data.durationMs = durationMs;
+    data.resolution = ToString(last_settings_.resolution);
+    data.fps = last_settings_.ToProfile().fps;
+    data.rounds = rounds;
+
+    std::string sidecarError;
+    if (!WriteRecordingSidecar(data, last_output_path_, sidecarError)) {
+        const std::string warning =
+            "Gravação salva, mas não foi possível salvar os metadados: " + sidecarError;
+        log::Warning(warning);
+        if (warnings) warnings->push_back(warning);
+        return false;
+    }
+
+    last_sidecar_path_ = SidecarPathFor(last_output_path_).string();
+    last_duration_ms_ = durationMs;
+    return true;
+}
+
+bool RecorderController::FinalizeActiveRecording(std::string& error,
+                                                 std::vector<std::string>* warnings) {
     if (!session_) {
-        if (state_ == RecorderState::Recording || state_ == RecorderState::Stopping) state_ = RecorderState::Idle;
+        if (state_ == RecorderState::Recording || state_ == RecorderState::Stopping) {
+            state_ = RecorderState::Idle;
+            // Modo hook (testes/integração): não há sessão, mas o sidecar ainda é gerado.
+            WriteLastSidecar(0, {}, warnings);
+        }
         return true;
     }
+
     if (!session_->Stop(error)) {
         state_ = RecorderState::Error;
         last_error_ = error;
@@ -27,9 +62,13 @@ bool RecorderController::FinalizeActiveRecording(std::string& error) {
         log::Error("Falha ao finalizar gravação: " + error);
         return false;
     }
+
+    const auto summary = session_->Summary();
     session_.reset();
     state_ = RecorderState::Idle;
-    log::Info("Gravação finalizada: " + last_output_path_);
+    WriteLastSidecar(summary.durationMs, summary.rounds, warnings);
+    log::Info("Gravação finalizada: " + last_output_path_ +
+              (last_sidecar_path_.empty() ? "" : " (sidecar: " + last_sidecar_path_ + ")"));
     return true;
 }
 
@@ -57,10 +96,14 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
             out.push_back(CommandProtocol::Ok("pong", "alive").ToJsonLine());
             break;
         case CommandType::Shutdown: {
-            // Finaliza o mux antes de sair, inclusive se a UI fechar durante a gravação.
+            // Finaliza o mux e o sidecar antes de sair, inclusive se a UI fechar gravando.
             std::string ferr;
-            if (!FinalizeActiveRecording(ferr)) {
+            std::vector<std::string> finalizeWarnings;
+            if (!FinalizeActiveRecording(ferr, &finalizeWarnings)) {
                 out.push_back(CommandProtocol::Error("error", ferr).ToJsonLine());
+            }
+            for (const auto& warning : finalizeWarnings) {
+                out.push_back(CommandProtocol::Ok("warning", warning).ToJsonLine());
             }
             should_exit_ = true;
             out.push_back(CommandProtocol::Ok("shutdown", "bye").ToJsonLine());
@@ -84,6 +127,14 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
                 out.push_back(CommandProtocol::Error("error", err).ToJsonLine());
                 break;
             }
+
+            // Base do sidecar: configuração e instante de início desta gravação.
+            last_settings_ = cmd.settings;
+            last_started_at_ = SystemClockInstance().Now();
+            has_last_recording_ = true;
+            last_sidecar_path_.clear();
+            last_duration_ms_ = 0;
+
             // Simulação completa (testes/integração controlada).
             if (hook_set_) {
                 if (!hook_ok_) {
@@ -161,11 +212,19 @@ std::vector<std::string> RecorderController::HandleCommand(const Command& cmd) {
             }
             state_ = RecorderState::Stopping;
             std::string serr;
-            if (!FinalizeActiveRecording(serr)) {
+            std::vector<std::string> finalizeWarnings;
+            if (!FinalizeActiveRecording(serr, &finalizeWarnings)) {
                 out.push_back(CommandProtocol::Error("error", serr).ToJsonLine());
                 break;
             }
-            out.push_back(CommandProtocol::Ok("recording_stopped", "Gravação finalizada", last_output_path_).ToJsonLine());
+            auto stopped = CommandProtocol::Ok("recording_stopped", "Gravação finalizada",
+                                               last_output_path_);
+            stopped.sidecar_path = last_sidecar_path_;
+            stopped.duration_ms = last_duration_ms_;
+            out.push_back(stopped.ToJsonLine());
+            for (const auto& warning : finalizeWarnings) {
+                out.push_back(CommandProtocol::Ok("warning", warning).ToJsonLine());
+            }
             break;
         }
         case CommandType::Unknown:

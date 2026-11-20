@@ -81,16 +81,23 @@ std::string Event::ToJsonLine() const {
     oss << "{\"event\":\"" << JsonEscape(name) << "\","
         << "\"ok\":" << (ok ? "true" : "false") << ","
         << "\"message\":\"" << JsonEscape(message) << "\","
-        << "\"path\":\"" << JsonEscape(path) << "\"}";
+        << "\"path\":\"" << JsonEscape(path) << "\"";
+    if (!sidecar_path.empty()) {
+        oss << ",\"sidecar_path\":\"" << JsonEscape(sidecar_path) << "\"";
+    }
+    if (duration_ms >= 0) {
+        oss << ",\"duration_ms\":" << duration_ms;
+    }
+    oss << '}';
     return oss.str();
 }
 
 Event CommandProtocol::Ok(std::string_view name, std::string_view message, std::string_view path) {
-    return Event{std::string(name), std::string(message), std::string(path), true};
+    return Event{std::string(name), std::string(message), std::string(path), true, "", -1};
 }
 
 Event CommandProtocol::Error(std::string_view name, std::string_view message) {
-    return Event{std::string(name), std::string(message), "", false};
+    return Event{std::string(name), std::string(message), "", false, "", -1};
 }
 
 std::optional<Command> CommandProtocol::ParseLine(std::string_view line) {

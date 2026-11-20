@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -20,6 +21,9 @@ struct Event {
     std::string message;
     std::string path;
     bool ok = true;
+    // Campos opcionais (ausentes nos eventos antigos). O parser da UI já ignora extras.
+    std::string sidecar_path;
+    std::int64_t duration_ms = -1;
 
     std::string ToJsonLine() const;
 };

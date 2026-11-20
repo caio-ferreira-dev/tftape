@@ -14,6 +14,7 @@ endif()
 
 add_library(recorder_core
   src/output/OutputPath.cpp
+  src/output/RecordingSidecar.cpp
   src/output/RecordingSettings.cpp
   src/capture/WindowRules.cpp
   src/capture/TftWindowFinder.cpp

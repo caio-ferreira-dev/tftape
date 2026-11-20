@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include "app/RecorderController.h"
+#include "output/RecordingSidecar.h"
 
 namespace fs = std::filesystem;
 using tft::RecorderController;
@@ -79,4 +83,66 @@ TEST(RecorderState, RejectsNonAbsoluteOutputDirectory) {
     ASSERT_EQ(responses.size(), 1u);
     EXPECT_NE(responses[0].find("absoluto"), std::string::npos);
     EXPECT_EQ(c.GetState(), RecorderState::Error);
+}
+
+TEST(RecorderState, StopWritesSidecarAlongsideMp4) {
+    auto dir = fs::temp_directory_path() / "tftape_sidecar_state_stop";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+
+    const auto mp4 = dir / "out.mp4";
+    RecorderController c;
+    c.SetStartHookResult(true, "ok", mp4.string());
+    c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
+
+    auto responses = c.HandleLine("{\"cmd\":\"stop\"}");
+    ASSERT_FALSE(responses.empty());
+    EXPECT_NE(responses[0].find("\"event\":\"recording_stopped\""), std::string::npos);
+    EXPECT_NE(responses[0].find("\"sidecar_path\""), std::string::npos);
+    EXPECT_NE(responses[0].find("\"duration_ms\":0"), std::string::npos);
+
+    const auto sidecar = tft::SidecarPathFor(mp4);
+    ASSERT_TRUE(fs::exists(sidecar));
+    EXPECT_EQ(c.LastSidecarPath(), sidecar.string());
+
+    std::ifstream in(sidecar, std::ios::binary);
+    std::ostringstream oss;
+    oss << in.rdbuf();
+    EXPECT_NE(oss.str().find("\"rounds\":[]"), std::string::npos);
+
+    fs::remove_all(dir);
+}
+
+TEST(RecorderState, ShutdownAlsoWritesSidecar) {
+    auto dir = fs::temp_directory_path() / "tftape_sidecar_state_shutdown";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+
+    const auto mp4 = dir / "out.mp4";
+    RecorderController c;
+    c.SetStartHookResult(true, "ok", mp4.string());
+    c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
+
+    auto responses = c.HandleLine("{\"cmd\":\"shutdown\"}");
+    ASSERT_FALSE(responses.empty());
+    EXPECT_TRUE(c.ShouldExit());
+    ASSERT_TRUE(fs::exists(tft::SidecarPathFor(mp4)));
+
+    fs::remove_all(dir);
+}
+
+TEST(RecorderState, FailedStartDoesNotWriteSidecar) {
+    auto dir = fs::temp_directory_path() / "tftape_sidecar_state_failed";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+
+    const auto mp4 = dir / "out.mp4";
+    RecorderController c;
+    c.SetStartHookResult(false, "Janela do TFT não encontrada");
+    c.HandleLine("{\"cmd\":\"start\",\"output_dir\":\"" + dir.generic_string() + "\"}");
+
+    EXPECT_FALSE(fs::exists(tft::SidecarPathFor(mp4)));
+    EXPECT_TRUE(c.LastSidecarPath().empty());
+
+    fs::remove_all(dir);
 }
