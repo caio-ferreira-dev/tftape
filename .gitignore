@@ -37,3 +37,6 @@ Thumbs.db
 
 # Local config overrides
 *.local.json
+
+# Local agent/skills instructions
+.agents/
