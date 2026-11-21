@@ -17,6 +17,8 @@
 
 #if defined(_WIN32)
 #include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Globalization.h>
 #include <winrt/Windows.Graphics.Imaging.h>
 #include <winrt/Windows.Media.Ocr.h>
@@ -192,7 +194,7 @@ private:
             // Já inicializado nesta thread: ok.
         }
 
-        WOC::OcrEngine engine{};
+        WOC::OcrEngine engine = nullptr;
         try {
             engine = WOC::OcrEngine::TryCreateFromUserProfileLanguages();
             if (!engine) {
@@ -206,7 +208,7 @@ private:
                 }
             }
         } catch (...) {
-            engine = WOC::OcrEngine{};
+            engine = nullptr;
         }
 #endif
 
