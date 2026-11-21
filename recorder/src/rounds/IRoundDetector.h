@@ -6,6 +6,14 @@
 
 namespace tft {
 
+/// Retângulo em coordenadas normalizadas (0..1) relativas ao frame capturado.
+struct NormalizedRect {
+    double x = 0.42;
+    double y = 0.02;
+    double w = 0.16;
+    double h = 0.08;
+};
+
 /// Uma imagem BGRA pronta para análise (o mesmo buffer lido para o encode).
 struct FrameView {
     const std::uint8_t* bgra = nullptr;
@@ -35,6 +43,10 @@ public:
 
     /// Chamado na thread de vídeo, uma vez por frame encaminhado ao encoder.
     virtual void ProcessFrame(const FrameView& frame) = 0;
+
+    /// Drena trabalho assíncrono pendente antes de ler DrainDetections().
+    /// Implementações síncronas não precisam fazer nada.
+    virtual void Flush() {}
 
     /// Devolve (e limpa) os rounds detectados desde a última chamada.
     virtual std::vector<DetectedRound> DrainDetections() = 0;

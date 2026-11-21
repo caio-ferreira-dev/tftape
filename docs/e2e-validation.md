@@ -108,15 +108,17 @@ O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`;
 | D6 | Fechar a janela com um VOD tocando | Player é liberado e o arquivo não fica travado; core recebe `shutdown` | | Importante no Windows |
 | D7 | Verificar botões de rounds | Com `rounds: []`, aparece "Nenhum round detectado nesta gravação." e nenhum botão; com rounds, um botão por marcador | | |
 
-### 3.6 Marcadores de round (ROI/HUD)
+### 3.6 Marcadores de round (Windows OCR)
 
 | ID | Cenário | Resultado esperado | Resultado | Observação |
 |---|---|---|---|---|
-| M1 | Gravar do início de um jogo até a primeira virada do contador | Sidecar contém `1-1` em `startMs: 0` e `1-2` no instante da virada; botões na aba VODs fazem seek para esses instantes | | Ajustar a ROI em `tft_round_detector.json` com um print real se necessário |
-| M2 | Gravar com HUD/contador fora da ROI ou sem mudança | `rounds` pode ficar vazio, sem aviso de erro e sem afetar o MP4 | | Config inválida gera aviso amarelo e usa defaults |
-| M3 | Abrir `tft_round_detector.json` inválido (ROI fora de 0..1) | Core registra aviso no log/UI e grava com a configuração padrão | | A gravação não pode abortar |
+| M1 | Gravar do início de um jogo até a primeira virada do contador | Sidecar contém `1-1` (primeira leitura válida) e `1-2` no instante da virada; botões na aba VODs fazem seek para esses instantes | | Conferir no log `OCR bruto:` se o contador foi lido |
+| M2 | Gravar alternando a barra de estágio entre expandida e compacta, em estágios diferentes | Rótulos lidos corretamente nos dois modos; a mudança de formato da barra sozinha **não** cria marcador | | A faixa `band` deve cobrir ambos os modos |
+| M3 | Gravar com o contador ilegível/fora da faixa ou sem mudança | `rounds` pode ficar vazio, sem aviso de erro e sem afetar o MP4 | | Texto bruto vai só para o log |
+| M4 | Abrir `tft_round_detector.json` inválido (`band` fora de 0..1) | Core registra aviso no log/UI e grava com a configuração padrão | | A gravação não pode abortar |
+| M5 | Comparar MP4 gravado com OCR vs. sem OCR | Mesmo fps/contagem de frames/duração e nenhum drop perceptível; log sem muitas amostras descartadas | | Ver item 4 (inspeção do MP4) |
 
-> Limitação conhecida: sem OCR, os rótulos são atribuídos pela sequência configurada. Se a gravação começar no meio de um jogo, ajuste `labels` no JSON para começar no round atual; a detecção em si continua válida.
+> Limitação conhecida: o Windows OCR não fornece confiança numérica por palavra; `confidence` no sidecar é preenchido como `1.0` quando o texto casa com `N-M` e se repete em leituras consecutivas. Se algum estágio/modo não for reconhecido, ajuste `band` em `tft_round_detector.json` e valide pelo texto bruto no log antes de pedir prints de todos os estágios.
 
 ## 4. Inspeção do MP4
 
@@ -142,19 +144,20 @@ Checar:
 - Início/fim do recorder e exceções fatais.
 - Carregamento das regras de janela e candidatos avaliados.
 - Regra que selecionou/excluiu cada janela e motivo de falha/ambiguidade.
-- Carregamento do `tft_round_detector.json`, avisos de configuração inválida e linhas `Round detectado: <label> em <ms> ms`.
+- Carregamento do `tft_round_detector.json`, avisos de configuração inválida e linhas `Round detectado por OCR: <label> em <ms> ms`.
+- Linhas `OCR bruto: ... -> <label>`, `OCR: <ms> ms, fila=<n>, descartadas=<n>` e aviso `Windows OCR indisponível` (se aplicável).
 - Avisos de fontes opcionais e erros de áudio do jogo.
 - Linhas com acentos legíveis (sem `indisponÃvel`).
 
 ## 6. Critérios de aceite
 
-- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (22 testes C++ e 16 testes xUnit adicionados depois).
+- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (29 testes C++ e 16 testes xUnit adicionados depois, incluindo os do OCR).
 - [x] V1–V4: MP4 H.264 válido, resolução/fps/bitrate corretos.
 - [x] A1–A7: áudio do jogo sempre presente quando habilitado; falhas opcionais viram aviso; falha do jogo aborta.
 - [x] R1–R9: nenhuma captura indevida, finalização segura e mensagens claras.
 - [ ] S1–S5: sidecar gravado em stop/shutdown, JSON íntegro e aviso em caso de falha. Geração básica confirmada manualmente; checklist formal pendente.
 - [ ] D1–D7: aba VODs lista, reproduz, troca de vídeo, tolera sidecar inválido e libera o player ao fechar.
-- [ ] M1–M3: marcadores de round gerados na ROI correta, seek na aba VODs e fallback seguro em configuração inválida.
+- [ ] M1–M5: marcadores de round lidos por OCR, estáveis nos modos expandido/compacto, com seek na aba VODs, fallback seguro em configuração inválida e sem impacto no MP4.
 - [x] `ffprobe` sem erros e sincronia A/V aceitável.
 - [x] Logs completos e legíveis.
 
@@ -164,8 +167,8 @@ Checar:
 |---|---|
 | Data da validação | 19/11/2026 |
 | Windows / build | Windows 10 10.0.26100.9974 (24H2) |
-| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 (sidecar), D1–D7 (aba VODs) e M1–M3 (marcadores) ficaram pendentes para a próxima validação no Windows. |
+| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 (sidecar), D1–D7 (aba VODs) e M1–M5 (marcadores por OCR) ficaram pendentes para a próxima validação no Windows. |
 | Arquivos MP4 de referência | MP4 dos perfis V1–V4, conferidos na UI e inspecionados com `ffprobe` |
 | Exceções documentadas | Nenhuma |
 
-Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. As seções 3.4 a 3.6 e os casos S1–S5/D1–D7/M1–M3 foram acrescentados depois com as features de sidecar, biblioteca de VODs e marcadores de round e ainda precisam de execução no Windows.
+Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. As seções 3.4 a 3.6 e os casos S1–S5/D1–D7/M1–M5 foram acrescentados depois com as features de sidecar, biblioteca de VODs e marcadores de round por OCR e ainda precisam de execução no Windows.

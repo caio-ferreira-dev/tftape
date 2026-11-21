@@ -11,14 +11,6 @@
 
 namespace tft {
 
-/// Retângulo em coordenadas normalizadas (0..1) relativas ao frame capturado.
-struct NormalizedRect {
-    double x = 0.42;
-    double y = 0.02;
-    double w = 0.16;
-    double h = 0.08;
-};
-
 struct RoundDetectorConfig {
     NormalizedRect roi{};
 

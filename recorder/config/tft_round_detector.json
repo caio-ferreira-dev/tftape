@@ -1,11 +1,9 @@
 {
-  "_comment": "ROI normalizada (x,y,w,h) do contador de round no HUD. Ajuste com um print do cliente; valores abaixo são provisórios.",
-  "roi": "0.42,0.02,0.16,0.08",
-  "labels": "1-1,1-2,1-3,1-4,2-1,2-2,2-3,2-4,2-5,2-6,2-7,3-1,3-2,3-3,3-4,3-5,3-6,3-7,4-1,4-2,4-3,4-4,4-5,4-6,4-7,5-1,5-2,5-3,5-4,5-5,5-6,5-7,6-1,6-2,6-3,6-4,6-5,6-6,6-7",
-  "change_threshold": "14",
-  "stability_frames": "4",
-  "cooldown_ms": "2500",
-  "warmup_ms": "3000",
-  "emit_initial_round": "true",
-  "source": "hud-counter"
+  "_comment": "Faixa normalizada (x,y,w,h) do topo da janela onde o Windows OCR procura o contador de round (ex.: 1-1). Deve cobrir a barra expandida e a compacta.",
+  "band": "0.15,0.0,0.70,0.18",
+  "sample_interval_ms": "200",
+  "warmup_ms": "500",
+  "confirmation_samples": "2",
+  "cooldown_ms": "1200",
+  "source": "hud-ocr"
 }

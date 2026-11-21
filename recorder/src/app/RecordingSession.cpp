@@ -15,8 +15,8 @@
 #include "encode/MfMp4Writer.h"
 #include "output/OutputPath.h"
 #include "rounds/IRoundDetector.h"
-#include "rounds/RoundDetector.h"
-#include "rounds/RoundDetectorConfigLoader.h"
+#include "rounds/OcrRoundDetector.h"
+#include "rounds/OcrRoundDetectorConfigLoader.h"
 #include "util/Logger.h"
 
 #if defined(_WIN32)
@@ -156,24 +156,26 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
 
     // Rounds: configuração carregada uma vez por gravação. A ausência do arquivo
     // não é erro; uma configuração inválida gera aviso mas não impede a gravação.
+    // O detector por OCR roda em worker próprio: a thread de vídeo só recorta a
+    // faixa superior e copia os pixels, sem esperar pelo reconhecedor.
     if (!round_detector_) {
-        RoundDetectorConfig detector_config = DefaultRoundDetectorConfig();
-        const std::string config_path = FindRoundDetectorConfigPath();
+        OcrRoundDetectorConfig detector_config = DefaultOcrRoundDetectorConfig();
+        const std::string config_path = FindOcrRoundDetectorConfigPath();
         std::string config_error;
         if (!config_path.empty()) {
-            if (LoadRoundDetectorConfig(config_path, detector_config, &config_error)) {
-                log::Debug("Detector de rounds usando " + config_path);
+            if (LoadOcrRoundDetectorConfig(config_path, detector_config, &config_error)) {
+                log::Debug("Detector de rounds por OCR usando " + config_path);
             } else {
-                detector_config = DefaultRoundDetectorConfig();
+                detector_config = DefaultOcrRoundDetectorConfig();
                 const std::string warning =
                     "Configuração de rounds inválida (" + config_error + "); usando padrão.";
                 log::Warning(warning);
                 if (warnings) warnings->push_back(warning);
             }
         } else {
-            log::Debug("Configuração de rounds ausente; usando ROI padrão.");
+            log::Debug("Configuração de rounds ausente; usando faixa padrão de OCR.");
         }
-        round_detector_ = std::make_shared<RoundDetector>(std::move(detector_config));
+        round_detector_ = std::make_shared<OcrRoundDetector>(std::move(detector_config));
     }
     round_detector_->Reset();
 
@@ -226,8 +228,9 @@ bool RecordingSession::Stop(std::string& error) {
     summary_.resolution = ToString(settings_.resolution);
     summary_.fps = profile.fps;
 
-    // As threads já terminaram: todos os marcadores detectados estão disponíveis.
+    // As threads já terminaram: drena o OCR e lê todos os marcadores pendentes.
     if (round_detector_) {
+        round_detector_->Flush();
         for (auto& detected : round_detector_->DrainDetections()) {
             RoundMarker marker;
             marker.label = std::move(detected.label);

@@ -21,6 +21,9 @@ add_library(recorder_core
   src/capture/WgcCaptureSource.cpp
   src/rounds/RoundDetector.cpp
   src/rounds/RoundDetectorConfigLoader.cpp
+  src/rounds/OcrRoundDetector.cpp
+  src/rounds/OcrRoundDetectorConfigLoader.cpp
+  src/rounds/OcrRoundText.cpp
   src/app/CommandProtocol.cpp
   src/app/RecorderController.cpp
   src/app/RecordingSession.cpp
