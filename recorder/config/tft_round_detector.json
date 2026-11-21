@@ -4,7 +4,7 @@
   "sample_interval_ms": "100",
   "warmup_ms": "500",
   "confirmation_samples": "2",
-  "confirmation_window_ms": "15000",
+  "confirmation_window_ms": "60000",
   "cooldown_ms": "1200",
   "source": "hud-ocr"
 }

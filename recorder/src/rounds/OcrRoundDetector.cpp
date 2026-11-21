@@ -186,6 +186,13 @@ private:
             static_cast<std::int64_t>(config_.confirmation_window_ms) * kTicksPerMs;
         if (timestamp_100ns - candidate_first_100ns_ > window) {
             // Candidato velho (ruído isolado): recomeça a contagem agora.
+            // Isso acontece quando o OCR lê o contador só uma vez e nunca mais
+            // naquele round; sem esse limite, uma leitura errada poderia ser
+            // datada minutos depois.
+            log::Debug("OCR: candidato " + candidate_label_ + " expirou apos " +
+                       std::to_string((timestamp_100ns - candidate_first_100ns_) /
+                                      kTicksPerMs) +
+                       " ms; reiniciando em " + label);
             candidate_first_100ns_ = timestamp_100ns;
             candidate_hits_ = 1;
         }

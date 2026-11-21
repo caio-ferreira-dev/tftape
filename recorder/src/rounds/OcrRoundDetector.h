@@ -18,11 +18,12 @@ struct OcrRoundDetectorConfig {
     int sample_interval_ms = 100;
     int warmup_ms = 500;
 
-    /// O OCR acerta o contador de forma esporádica. Exigimos N leituras do
-    /// mesmo texto dentro de uma janela (não precisam ser consecutivas) e
+    /// O OCR acerta o contador de forma esporádica: num VOD real, as duas
+    /// leituras do 1-2 estiveram 19 s apartadas. Exigimos N leituras do mesmo
+    /// texto dentro de uma janela generosa (não precisam ser consecutivas) e
     /// datamos o marcador na primeira leitura daquele texto.
     int confirmation_samples = 2;
-    int confirmation_window_ms = 15'000;
+    int confirmation_window_ms = 60'000;
     int cooldown_ms = 1200;
 
     std::string source = "hud-ocr";

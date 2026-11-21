@@ -79,7 +79,7 @@ TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {
     EXPECT_EQ(100, config.sample_interval_ms);
     EXPECT_EQ(500, config.warmup_ms);
     EXPECT_EQ(2, config.confirmation_samples);
-    EXPECT_EQ(15'000, config.confirmation_window_ms);
+    EXPECT_EQ(60'000, config.confirmation_window_ms);
     EXPECT_EQ(1200, config.cooldown_ms);
     EXPECT_EQ("hud-ocr", config.source);
 }
