@@ -449,7 +449,7 @@ private:
         // margem e amplia 3x. É aqui que o 1-5 pequeno/estilizado costuma
         // começar a ser lido.
         if (!lock_.valid && has_wide_match) {
-            SetLockFromMatch(wide_match, wide_w, wide_h, output.rect);
+            SetLockFromMatch(wide_match, sample.width, sample.height, output.rect);
             output.has_rect = lock_.valid;
         }
         if (lock_.valid) {
