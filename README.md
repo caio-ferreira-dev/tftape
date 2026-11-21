@@ -34,8 +34,8 @@ O build copia automaticamente `recorder.exe` (de `recorder/build/Release`), `tft
 ```powershell
 dotnet test ui/TFTape.Ui.sln -c Release
 ```
-Esperado: **15 testes xUnit** passando.
-Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, caminho do sidecar e duração recebidos no evento de parada, exceções, `PropertyChanged` e o despachante injetado.
+Esperado: **27 testes xUnit** passando.
+Os testes cobrem o `RecorderViewModel` com um `IRecorderService` falso (sem iniciar o processo do core): comandos, opções enviadas, eventos de início/aviso/fim/erro, caminho do sidecar e duração recebidos no evento de parada, exceções, `PropertyChanged` e o despachante injetado. Também cobrem a biblioteca de VODs: descoberta de MP4s, leitura/validação do sidecar, ordenação, tolerância a sidecar corrompido, persistência da pasta e eventos de reprodução/seek do `VodLibraryViewModel` (sem WinUI).
 
 Para usar um core em outro diretório:
 ```powershell
@@ -56,6 +56,7 @@ dotnet publish ui/TFTape.Ui/TFTape.Ui.csproj -c Release
 - A pasta de destino precisa ser absoluta e válida no Windows (sem `..`, caracteres reservados ou nomes como `CON`); o core verifica a escrita antes de iniciar.
 - A última pasta utilizada é lembrada entre execuções e já aparece preenchida na próxima abertura da UI (`%LOCALAPPDATA%\TFTape\output_directory.txt`).
 - Cada MP4 recebe um sidecar `<arquivo>.mp4.tftape.json` com duração, perfil e `rounds` (inicialmente vazio). Ele é gravado pelo core em `stop`, `shutdown` e fim do stdin; se a escrita falhar, o MP4 continua válido e a UI recebe um aviso.
+- A aba **VODs** (na mesma janela) lista os MP4 de uma pasta, lê os sidecars e reproduz o vídeo selecionado. O botão de cada round leva o player ao instante marcado; enquanto a detecção por ROI/HUD não existe, a lista de rounds aparece vazia com o aviso correspondente. A pasta da biblioteca é lembrada separadamente (`%LOCALAPPDATA%\TFTape\vod_directory.txt`) e começa igual à pasta de gravação.
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
 - Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
@@ -81,7 +82,7 @@ dotnet build ui/TFTape.Ui.sln -c Release
 dotnet test ui/TFTape.Ui.sln -c Release --no-build
 ```
 
-> Status: validação concluída em 19/11/2026 no Windows; todos os casos daquela data passaram. Os casos do sidecar (seção 3.4) foram acrescentados depois e aguardam nova validação. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).
+> Status: validação concluída em 19/11/2026 no Windows; todos os casos daquela data passaram. Os casos do sidecar (seção 3.4) e da aba VODs (seção 3.5) foram acrescentados depois e aguardam nova validação. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).
 
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).
