@@ -330,7 +330,7 @@ private:
                    && sample.timestamp_100ns - history_.front().timestamp_100ns
                       > static_cast<std::int64_t>(config_.transition_lookback_ms) * kTicksPerMs
                         + static_cast<std::int64_t>(config_.sample_interval_ms) * kTicksPerMs) {
-                history_.pop_front();
+                history_.erase(history_.begin());
             }
             OnRecognition(output.label, sample.timestamp_100ns, history_);
 #else
@@ -366,11 +366,29 @@ private:
             if (!parsed) continue;
 
             if (!has_match) {
-                // BoundingRect da linha inteira; o contador é o texto mais
-                // curto da faixa estreita. União das palavras que casaram.
-                auto rect = line.BoundingRect();
-                match = {rect.X, rect.Y, rect.Width, rect.Height};
-                has_match = true;
+                // OcrLine não expõe BoundingRect: usa a união das BoundingRect
+                // das palavras da linha (cada OcrWord tem BoundingRect).
+                float min_x = 0.0f, min_y = 0.0f, max_x = 0.0f, max_y = 0.0f;
+                bool first_word = true;
+                for (const auto& word : line.Words()) {
+                    const auto r = word.BoundingRect();
+                    if (first_word) {
+                        min_x = r.X;
+                        min_y = r.Y;
+                        max_x = r.X + r.Width;
+                        max_y = r.Y + r.Height;
+                        first_word = false;
+                    } else {
+                        min_x = std::min(min_x, r.X);
+                        min_y = std::min(min_y, r.Y);
+                        max_x = std::max(max_x, r.X + r.Width);
+                        max_y = std::max(max_y, r.Y + r.Height);
+                    }
+                }
+                if (!first_word) {
+                    match = {min_x, min_y, max_x - min_x, max_y - min_y};
+                    has_match = true;
+                }
             }
             if (!exact_found && exact) {
                 label = std::move(candidate);

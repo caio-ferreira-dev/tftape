@@ -3,6 +3,7 @@
 #include <cstddef>
 
 namespace tft {
+namespace detail {
 namespace {
 
 int MeanAbsDiff(const std::vector<std::uint8_t>& a, const std::vector<std::uint8_t>& b) {
@@ -17,31 +18,32 @@ int MeanAbsDiff(const std::vector<std::uint8_t>& a, const std::vector<std::uint8
 
 } // namespace
 
-std::int64_t FindOcrTransition(const std::vector<OcrSignatureSample>& samples,
-                               std::int64_t first_read_100ns,
-                               std::int64_t lookback_100ns,
-                               int min_diff) {
-    if (samples.size() < 3 || first_read_100ns <= 0) return 0;
+std::int64_t FindOcrTransitionImpl(const OcrSignatureSample* samples,
+                                   std::size_t count,
+                                   std::int64_t first_read_100ns,
+                                   std::int64_t lookback_100ns,
+                                   int min_diff) {
+    if (count < 3 || first_read_100ns <= 0 || !samples) return 0;
 
-    int target = -1;
-    for (std::size_t i = 0; i < samples.size(); ++i) {
+    std::size_t target = 0;
+    for (std::size_t i = 0; i < count; ++i) {
         if (samples[i].timestamp_100ns > first_read_100ns) break;
-        target = static_cast<int>(i);
+        target = i;
     }
     if (target < 2) return 0;
 
-    const auto& target_signature = samples[static_cast<std::size_t>(target)].signature;
+    const auto& target_signature = samples[target].signature;
     if (target_signature.empty()) return 0;
 
     const std::int64_t oldest = first_read_100ns - lookback_100ns;
     int best_score = -1;
     std::int64_t best_timestamp = 0;
 
-    for (int i = 1; i < target; ++i) {
-        if (samples[static_cast<std::size_t>(i)].timestamp_100ns < oldest) continue;
-        const auto& before = samples[static_cast<std::size_t>(i - 1)].signature;
-        const auto& current = samples[static_cast<std::size_t>(i)].signature;
-        const auto& after = samples[static_cast<std::size_t>(i + 1)].signature;
+    for (std::size_t i = 1; i < target; ++i) {
+        if (samples[i].timestamp_100ns < oldest) continue;
+        const auto& before = samples[i - 1].signature;
+        const auto& current = samples[i].signature;
+        const auto& after = samples[i + 1].signature;
 
         const int changed = MeanAbsDiff(before, current);
         const int settled = MeanAbsDiff(current, after);
@@ -55,10 +57,11 @@ std::int64_t FindOcrTransition(const std::vector<OcrSignatureSample>& samples,
         const int score = changed - settled;
         if (score > best_score) {
             best_score = score;
-            best_timestamp = samples[static_cast<std::size_t>(i)].timestamp_100ns;
+            best_timestamp = samples[i].timestamp_100ns;
         }
     }
     return best_timestamp;
 }
 
+} // namespace detail
 } // namespace tft
