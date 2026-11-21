@@ -39,13 +39,17 @@ struct SolidFrame {
     int h;
 };
 
+constexpr std::int64_t Ms(int milliseconds) {
+    return static_cast<std::int64_t>(milliseconds) * 10'000; // 1 ms = 10.000 ticks de 100 ns
+}
+
 RoundDetectorConfig TestConfig() {
     RoundDetectorConfig config;
     config.roi = NormalizedRect{0.0, 0.0, 1.0, 1.0};
     config.labels = {"1-1", "1-2"};
     config.change_threshold = 10;
     config.stability_frames = 2;
-    config.cooldown_ms = 1000;
+    config.cooldown_ms = 5;
     config.warmup_ms = 0;
     config.emit_initial_round = false;
     config.source = "test-roi";
@@ -83,10 +87,10 @@ TEST(RoundDetectorTests, ReportsStableRoiChangeAtItsFirstFrame) {
     const SolidFrame dark(40);
     const SolidFrame bright(200);
 
-    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(i * 10'000));
+    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(Ms(i)));
     EXPECT_TRUE(detector.DrainDetections().empty());
 
-    for (int i = 0; i < 3; ++i) detector.ProcessFrame(bright.View((5 + i) * 10'000));
+    for (int i = 0; i < 3; ++i) detector.ProcessFrame(bright.View(Ms(5 + i)));
 
     const auto rounds = detector.DrainDetections();
     ASSERT_EQ(1u, rounds.size());
@@ -102,23 +106,24 @@ TEST(RoundDetectorTests, IgnoresSingleFrameFlicker) {
     const SolidFrame dark(40);
     const SolidFrame bright(200);
 
-    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(i * 10'000));
-    detector.ProcessFrame(bright.View(50'000));
-    for (int i = 0; i < 3; ++i) detector.ProcessFrame(dark.View((60 + i) * 10'000));
+    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(Ms(i)));
+    detector.ProcessFrame(bright.View(Ms(5)));
+    for (int i = 0; i < 3; ++i) detector.ProcessFrame(dark.View(Ms(6 + i)));
 
     EXPECT_TRUE(detector.DrainDetections().empty());
 }
 
 TEST(RoundDetectorTests, CooldownKeepsTheOriginalChangeTimestamp) {
     RoundDetectorConfig config = TestConfig();
-    config.cooldown_ms = 5000;
+    config.cooldown_ms = 5;
     RoundDetector detector(config);
     const SolidFrame dark(40);
     const SolidFrame bright(200);
 
-    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(i * 10'000));
-    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View((5 + i) * 10'000));
-    for (int i = 0; i < 9; ++i) detector.ProcessFrame(dark.View((70 + i) * 10'000));
+    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(Ms(i)));
+    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View(Ms(5 + i)));
+    // A segunda virada começa em 7 ms, mas só é confirmada depois do cooldown.
+    for (int i = 7; i <= 12; ++i) detector.ProcessFrame(dark.View(Ms(i)));
 
     const auto rounds = detector.DrainDetections();
     ASSERT_EQ(2u, rounds.size());
@@ -133,15 +138,15 @@ TEST(RoundDetectorTests, ResetRestartsLabelsAndPendingDetections) {
     const SolidFrame dark(40);
     const SolidFrame bright(200);
 
-    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(i * 10'000));
-    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View((5 + i) * 10'000));
+    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(Ms(i)));
+    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View(Ms(5 + i)));
     ASSERT_EQ(1u, detector.DrainDetections().size());
 
     detector.Reset();
     EXPECT_TRUE(detector.DrainDetections().empty());
 
-    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(i * 10'000));
-    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View((5 + i) * 10'000));
+    for (int i = 0; i < 5; ++i) detector.ProcessFrame(dark.View(Ms(i)));
+    for (int i = 0; i < 2; ++i) detector.ProcessFrame(bright.View(Ms(5 + i)));
     const auto restarted = detector.DrainDetections();
     ASSERT_EQ(1u, restarted.size());
     EXPECT_EQ("1-1", restarted[0].label);
@@ -155,10 +160,10 @@ TEST(RoundDetectorTests, EmitsInitialRoundThenLabelsFollowingChanges) {
     const SolidFrame dark(40);
     const SolidFrame bright(200);
 
-    detector.ProcessFrame(dark.View(0));
-    detector.ProcessFrame(dark.View(10'000));
-    detector.ProcessFrame(bright.View(20'000));
-    detector.ProcessFrame(bright.View(30'000));
+    detector.ProcessFrame(dark.View(Ms(0)));
+    detector.ProcessFrame(dark.View(Ms(1)));
+    detector.ProcessFrame(bright.View(Ms(2)));
+    detector.ProcessFrame(bright.View(Ms(3)));
 
     const auto rounds = detector.DrainDetections();
     ASSERT_EQ(2u, rounds.size());
