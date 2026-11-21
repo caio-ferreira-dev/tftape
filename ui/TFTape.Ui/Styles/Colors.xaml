@@ -8,6 +8,8 @@
     <Color x:Key="Color.Accent">#FF0CDBEB</Color>
     <Color x:Key="Color.TextSecondary">#FF8699BA</Color>
     <Color x:Key="Color.TextPrimary">#FFE2E8F0</Color>
+    <!-- Derivado de Primary + Surface: azul mais profundo para a aba selecionada. -->
+    <Color x:Key="Color.TabSelected">#FF1B3F7A</Color>
 
     <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
     <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
@@ -16,4 +18,5 @@
     <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
     <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
     <SolidColorBrush x:Key="Brush.Divider" Color="{StaticResource Color.TextSecondary}" Opacity="0.18" />
+    <SolidColorBrush x:Key="Brush.TabSelected" Color="{StaticResource Color.TabSelected}" />
 </ResourceDictionary>

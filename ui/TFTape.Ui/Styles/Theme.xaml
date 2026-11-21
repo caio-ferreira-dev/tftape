@@ -29,7 +29,7 @@
     <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="{StaticResource Color.Surface}" Opacity="0.45" />
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="{StaticResource Color.Surface}" Opacity="0.9" />
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed" Color="{StaticResource Color.Primary}" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="{StaticResource Color.Primary}" />
+    <StaticResource x:Key="TabViewItemHeaderBackgroundSelected" ResourceKey="Brush.TabSelected" />
     <SolidColorBrush x:Key="TabViewItemHeaderForeground" Color="{StaticResource Color.TextSecondary}" />
     <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver" Color="{StaticResource Color.TextPrimary}" />
     <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected" Color="{StaticResource Color.Accent}" />
