@@ -50,6 +50,16 @@
           Link="tft_window_rules.sample.json"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(RecorderConfigDir)tft_round_detector.json"
+          Condition="Exists('$(RecorderConfigDir)tft_round_detector.json')"
+          Link="tft_round_detector.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(RecorderConfigDir)tft_round_detector.sample.json"
+          Condition="Exists('$(RecorderConfigDir)tft_round_detector.sample.json')"
+          Link="tft_round_detector.sample.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Avisa (sem quebrar o build da UI) quando o core ainda não foi compilado. -->

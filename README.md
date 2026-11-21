@@ -21,7 +21,7 @@ cmake -S recorder -B recorder/build -DTFT_BUILD_TESTS=ON
 cmake --build recorder/build --config Release
 ctest --test-dir recorder/build -C Release --output-on-failure
 ```
-Esperado: **84 testes C++** passando.
+Esperado: **96 testes C++** passando.
 
 ### UI (WinUI 3)
 ```powershell
@@ -55,8 +55,9 @@ dotnet publish ui/TFTape.Ui/TFTape.Ui.csproj -c Release
 - Comandos da UI são JSON-lines validados de forma estrita: JSON malformado, tipo errado, chave desconhecida/duplicada ou valor inválido (ex.: `fps: "45"`) geram erro detalhado no evento `error`, sem aplicar valores padrão silenciosamente. Escapes Unicode (`\uXXXX`) enviados pelo .NET são decodificados corretamente (pastas com acentos funcionam).
 - A pasta de destino precisa ser absoluta e válida no Windows (sem `..`, caracteres reservados ou nomes como `CON`); o core verifica a escrita antes de iniciar.
 - A última pasta utilizada é lembrada entre execuções e já aparece preenchida na próxima abertura da UI (`%LOCALAPPDATA%\TFTape\output_directory.txt`).
-- Cada MP4 recebe um sidecar `<arquivo>.mp4.tftape.json` com duração, perfil e `rounds` (inicialmente vazio). Ele é gravado pelo core em `stop`, `shutdown` e fim do stdin; se a escrita falhar, o MP4 continua válido e a UI recebe um aviso.
-- A aba **VODs** (na mesma janela) lista os MP4 de uma pasta, lê os sidecars e reproduz o vídeo selecionado. O botão de cada round leva o player ao instante marcado; enquanto a detecção por ROI/HUD não existe, a lista de rounds aparece vazia com o aviso correspondente. A pasta da biblioteca é lembrada separadamente (`%LOCALAPPDATA%\TFTape\vod_directory.txt`) e começa igual à pasta de gravação.
+- Cada MP4 recebe um sidecar `<arquivo>.mp4.tftape.json` com duração, perfil e `rounds` preenchidos pelo detector de HUD. Ele é gravado pelo core em `stop`, `shutdown` e fim do stdin; se a escrita falhar, o MP4 continua válido e a UI recebe um aviso.
+- O detector lê, em tempo real, o contador de round no topo do HUD com **Windows OCR** (`tft_round_detector.json`, copiado ao lado do `recorder.exe`). Ele reconhece rótulos no formato `1-1`, `2-3` diretamente do frame, sem sequência estimada, e só marca após o mesmo texto aparecer em duas leituras dentro de uma janela de 60 s (o OCR acerta o número pequeno de forma esporádica — num VOD real houve 19 s entre as duas leituras do `1-2`), datando o marcador na primeira leitura — mudanças no formato da barra (expandida/compacta) não geram marcador. A faixa `band` padrão cobre o topo da janela (o texto do contador fica em y ≈ 0%–4% e 9%–18%; uma faixa só sobre a barra não tem texto legível e faz o OCR retornar nada); quando o OCR acerta, o detector trava um recorte menor ao redor da palavra do contador e amplia o texto, o que permite ler números pequenos/estilizados como o `1-5`. O `startMs` pode ser antecipado para a mudança visual da barra imediatamente anterior à leitura, mas o rótulo continua vindo somente do OCR. Se algum modo não for reconhecido, ajuste `band`/`contrast_percent`/`tight_scale` e confirme pelo texto bruto no log. A captura/encode não espera pelo OCR (worker separado com fila limitada), então o MP4 não sofre alteração nem perda de fps. Se a config estiver inválida, o core avisa e usa os padrões; a gravação segue normalmente.
+- A aba **VODs** (na mesma janela) lista os MP4 de uma pasta, lê os sidecars e reproduz o vídeo selecionado. O botão de cada round leva o player ao instante marcado; quando nenhum marcador é detectado, aparece o aviso correspondente. A pasta da biblioteca é lembrada separadamente (`%LOCALAPPDATA%\TFTape\vod_directory.txt`) e começa igual à pasta de gravação.
 - Fechar a UI envia `shutdown` ao core e aguarda a finalização do MP4; se ele não responder, o processo é encerrado.
 - Falha ao capturar o **áudio do jogo** aborta o início com erro claro. Falha em fontes **opcionais** (sistema/microfone) gera aviso amarelo e a gravação segue sem essa fonte.
 - Diagnósticos do core são drenados do `stderr` pela UI (evita travamento por pipe cheio) e mostrados se o gravador encerrar com erro.
@@ -82,7 +83,7 @@ dotnet build ui/TFTape.Ui.sln -c Release
 dotnet test ui/TFTape.Ui.sln -c Release --no-build
 ```
 
-> Status: validação concluída em 19/11/2026 no Windows; todos os casos daquela data passaram. Os casos do sidecar (seção 3.4) e da aba VODs (seção 3.5) foram acrescentados depois e aguardam nova validação. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).
+> Status: validação concluída em 19/11/2026 no Windows; todos os casos daquela data passaram. Os casos do sidecar (seção 3.4), da aba VODs (seção 3.5) e dos marcadores de round (seção 3.6) foram acrescentados depois e aguardam nova validação. Detalhes em [`docs/e2e-validation.md`](docs/e2e-validation.md).
 
 ## Git
 - Repositório local na raiz. Cada funcionalidade/fix em branch própria (`feat/...`, `fix/...`).

@@ -21,6 +21,9 @@ add_executable(recorder_tests
   LoggerTests.cpp
   JsonTests.cpp
   EncoderProfilesTests.cpp
+  RoundDetectorTests.cpp
+  OcrRoundTextTests.cpp
+  OcrImagePrepTests.cpp
 )
 
 target_link_libraries(recorder_tests PRIVATE recorder_core GTest::gtest_main)

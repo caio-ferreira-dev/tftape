@@ -1,0 +1,16 @@
+{
+  "_comment": "Exemplo de configuração do detector por OCR. band = faixa normalizada (x,y,w,h) do topo da janela; contraste/ampliação ajudam o texto pequeno no recorte travado; confirmation_* controla a confirmação por leituras esparsas; transition_* refina o startMs pela mudança visual. Se outro modo colocar o barra em posição diferente, ajuste band. Texto bruto vai só para o log.",
+  "band": "0.15,0.0,0.70,0.18",
+  "sample_interval_ms": "100",
+  "warmup_ms": "500",
+  "contrast_percent": "140",
+  "tight_scale": "3",
+  "lock_margin_percent": "30",
+  "lock_miss_samples": "12",
+  "transition_lookback_ms": "5000",
+  "transition_min_diff": "20",
+  "confirmation_samples": "2",
+  "confirmation_window_ms": "60000",
+  "cooldown_ms": "1200",
+  "source": "hud-ocr"
+}
