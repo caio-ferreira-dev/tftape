@@ -72,10 +72,10 @@ TEST(OcrRoundTextTests, RecoversGlyphConfusionsOnWholeCounterLine) {
     std::string label;
     ASSERT_TRUE(TryParseRoundLabel("1-S", label));
     EXPECT_EQ("1-5", label);
-    ASSERT_TRUE(TryParseRoundLabel("2-O", label));
-    EXPECT_EQ("2-0", label);
-    ASSERT_TRUE(TryParseRoundLabel("I-O", label));
-    EXPECT_EQ("1-0", label);
+    ASSERT_TRUE(TryParseRoundLabel("2-S", label));
+    EXPECT_EQ("2-5", label);
+    ASSERT_TRUE(TryParseRoundLabel("1-l", label));
+    EXPECT_EQ("1-1", label);
 }
 
 TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {

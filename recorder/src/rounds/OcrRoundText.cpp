@@ -152,10 +152,10 @@ std::string NormalizeOcrRoundText(std::string_view text) {
 
 bool TryParseRoundLabel(std::string_view text, std::string& label) {
     if (ParsePattern(NormalizeOcrRoundText(text), label, false)) return true;
-    // Segundo passo, mais conservador que o primeiro: aceita confusões de
-    // glifos (S->5, O->0) somente se a linha INTEIRA for o contador. Assim
-    // "1-S" vira "1-5", mas um banner como "BOAS-VINDAS A RODADA 2!" não
-    // vira um rótulo falso.
+    // Segundo passo, mais conservador que o primeiro: aceita a confusão de
+    // glifos S->5 somente se a linha INTEIRA for o contador. Assim "1-S" vira
+    // "1-5", mas um banner como "BOAS-VINDAS A RODADA 2!" não vira rótulo
+    // falso. (O->0 não ajuda: 0 não é estágio/rodada válida.)
     std::string compact;
     std::size_t i = 0;
     std::uint32_t cp = 0;
@@ -168,8 +168,6 @@ bool TryParseRoundLabel(std::string_view text, std::string& label) {
             continue;
         } else if (cp == 'S' || cp == 's') {
             compact.push_back('5');
-        } else if (cp == 'O' || cp == 'o') {
-            compact.push_back('0');
         } else {
             return false;
         }
