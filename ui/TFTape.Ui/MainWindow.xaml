@@ -158,22 +158,66 @@
                             </Grid>
                         </Border>
 
-                        <!-- Player ocupa toda a altura disponível: mais área útil, sem cortar o vídeo. -->
-                        <Border Grid.Column="1" Background="{StaticResource Brush.Background}"
-                                CornerRadius="8" Padding="2">
-                            <muxc:MediaPlayerElement x:Name="VodPlayer"
-                                                     AreTransportControlsEnabled="True"
-                                                     Stretch="Uniform"
-                                                     HorizontalAlignment="Stretch"
-                                                     VerticalAlignment="Stretch">
-                                <muxc:MediaPlayerElement.TransportControls>
-                                    <!-- Sem auto-hide: os controles ficam visíveis, mas a timeline some durante a reprodução. -->
-                                    <muxc:MediaTransportControls ShowAndHideAutomatically="False"
-                                                                 IsZoomButtonVisible="False"
-                                                                 IsSeekBarVisible="True"/>
-                                </muxc:MediaPlayerElement.TransportControls>
-                            </muxc:MediaPlayerElement>
-                        </Border>
+                        <!-- O quadro é dimensionado na proporção real do vídeo (sidecar ou NaturalVideoSize). -->
+                        <Grid x:Name="VodPlayerViewport" Grid.Column="1"
+                              SizeChanged="OnVodViewportSizeChanged"
+                              PointerMoved="OnVodPointerMoved"
+                              PointerEntered="OnVodPointerEntered"
+                              PointerExited="OnVodPointerExited">
+                            <Border x:Name="VodPlayerFrame"
+                                    Background="{StaticResource Brush.Background}"
+                                    CornerRadius="8"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                                <Grid>
+                                    <muxc:MediaPlayerElement x:Name="VodPlayer"
+                                                             AreTransportControlsEnabled="False"
+                                                             Stretch="Uniform"
+                                                             HorizontalAlignment="Stretch"
+                                                             VerticalAlignment="Stretch"/>
+
+                                    <!-- Barra de ações customizada: transparente, fixa na base e sem botão de transmitir. -->
+                                    <Grid x:Name="VodControlBar"
+                                          VerticalAlignment="Bottom"
+                                          Background="Transparent"
+                                          Padding="16,0,16,12"
+                                          Visibility="Visible">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Slider x:Name="VodTimeline"
+                                                Minimum="0" Maximum="1" Value="0"
+                                                Height="20" Margin="0,0,0,4"
+                                                ValueChanged="OnVodTimelineValueChanged"/>
+
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Button x:Name="VodPlayPauseButton"
+                                                    Width="36" Height="36" Padding="0"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Click="OnVodPlayPauseClick">
+                                                <SymbolIcon x:Name="VodPlayPauseIcon" Symbol="Play"/>
+                                            </Button>
+                                            <TextBlock x:Name="VodTimeText" Grid.Column="1"
+                                                       VerticalAlignment="Center" Margin="8,0"
+                                                       Style="{StaticResource SecondaryText}"/>
+                                            <Slider x:Name="VodVolume"
+                                                    Grid.Column="3" Width="96"
+                                                    Minimum="0" Maximum="100" Value="100"
+                                                    ValueChanged="OnVodVolumeValueChanged"/>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </Grid>
                     </Grid>
                 </Grid>
             </muxc:TabViewItem>
