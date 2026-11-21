@@ -18,11 +18,12 @@ public sealed partial class MainWindow : Window
 
     private readonly FolderPickerService _folderPicker = new();
     private readonly RecorderProcessService _recorderService = new();
+    private readonly DispatcherQueue _uiQueue = DispatcherQueue.GetForCurrentThread();
     private MediaPlayer? _vodPlayer;
 
     public MainWindow()
     {
-        var dispatcher = new UiDispatcher(DispatcherQueue.GetForCurrentThread());
+        var dispatcher = new UiDispatcher(_uiQueue);
         var outputStore = new LocalFileOutputDirectoryStore();
 
         ViewModel = new RecorderViewModel(_recorderService, dispatcher, outputStore);
@@ -93,6 +94,7 @@ public sealed partial class MainWindow : Window
         {
             _vodPlayer ??= CreateVodPlayer();
             _vodPlayer.Source = MediaSource.CreateFromUri(new Uri(path));
+            UpdateVodControls(_vodPlayer.PlaybackSession.PlaybackState);
         }
         catch (Exception ex)
         {
@@ -117,8 +119,24 @@ public sealed partial class MainWindow : Window
     private MediaPlayer CreateVodPlayer()
     {
         var player = new MediaPlayer { AutoPlay = false };
+        player.PlaybackSession.PlaybackStateChanged += OnVodPlaybackStateChanged;
         VodPlayer.SetMediaPlayer(player);
         return player;
+    }
+
+    private void OnVodPlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        // O MediaPlayer pode notificar fora da thread de UI; marshal para o DispatcherQueue.
+        _uiQueue.TryEnqueue(() => UpdateVodControls(sender.PlaybackState));
+    }
+
+    private void UpdateVodControls(MediaPlaybackState state)
+    {
+        var controls = VodPlayer.TransportControls;
+        if (controls == null) return;
+
+        // Timeline visível quando pausado/parado; escondida enquanto o vídeo roda.
+        controls.IsSeekBarVisible = state != MediaPlaybackState.Playing;
     }
 
     private void DisposeVodPlayer()
@@ -126,6 +144,7 @@ public sealed partial class MainWindow : Window
         if (_vodPlayer == null) return;
         try
         {
+            _vodPlayer.PlaybackSession.PlaybackStateChanged -= OnVodPlaybackStateChanged;
             _vodPlayer.Pause();
             _vodPlayer.Source = null;
             VodPlayer.SetMediaPlayer(null);
