@@ -297,7 +297,14 @@ private:
             RecognizeOutput output;
             try {
                 Recognize(engine, sample, output);
+            } catch (const winrt::hresult_error& ex) {
+                log::Warning("OCR falhou: " + winrt::to_string(ex.message())
+                             + " (0x" + std::to_string(static_cast<unsigned>(ex.code())) + ")");
+                output.label.clear();
+                output.raw.clear();
+                output.has_rect = false;
             } catch (...) {
+                log::Warning("OCR falhou com exceção desconhecida");
                 output.label.clear();
                 output.raw.clear();
                 output.has_rect = false;
@@ -366,11 +373,18 @@ private:
             if (!parsed) continue;
 
             if (!has_match) {
-                // OcrLine não expõe BoundingRect: usa a união das BoundingRect
-                // das palavras da linha (cada OcrWord tem BoundingRect).
+                // Usa a BoundingRect das palavras que realmente contêm o
+                // contador, não da linha inteira (que pode incluir o timer e
+                // outros números do HUD, deixando o recorte largo demais).
                 float min_x = 0.0f, min_y = 0.0f, max_x = 0.0f, max_y = 0.0f;
                 bool first_word = true;
                 for (const auto& word : line.Words()) {
+                    const auto word_text = winrt::to_string(word.Text());
+                    std::string word_label;
+                    if (!TryParseRoundLabel(word_text, word_label)
+                        && !ParseExactRoundLabel(word_text, word_label)) {
+                        continue;
+                    }
                     const auto r = word.BoundingRect();
                     if (first_word) {
                         min_x = r.X;
@@ -422,20 +436,14 @@ private:
     void Recognize(const WOC::OcrEngine& engine,
                    const OcrSample& sample,
                    RecognizeOutput& output) {
-        // Etapa 1: faixa estreita, cinza/contraste, sem ampliação (o retângulo
-        // devolvido pelo OCR já está nessa escala).
-        std::vector<std::uint8_t> wide;
-        int wide_w = 0;
-        int wide_h = 0;
-        if (!PrepareOcrBitmap(sample.pixels.data(), sample.width, sample.height,
-                              sample.width * 4, nullptr, 1, config_.contrast_percent,
-                              wide, wide_w, wide_h)) {
-            return;
-        }
+        // Etapa 1: faixa ampla em BGRA cru, exatamente como antes das
+        // melhorias. A faixa estreita (y 4%-9%) capturava só a barra de
+        // progresso — o texto do contador fica em y 0%-4% e 9%-18% — e o OCR
+        // não retornava nenhuma linha.
         OcrMatchRect wide_match;
         bool has_wide_match = false;
-        RunOcr(engine, wide, wide_w, wide_h, output.label, output.raw,
-               wide_match, has_wide_match);
+        RunOcr(engine, sample.pixels, sample.width, sample.height,
+               output.label, output.raw, wide_match, has_wide_match);
 
         // Etapa 2: se o contador foi localizado, trava um recorte menor com
         // margem e amplia 3x. É aqui que o 1-5 pequeno/estilizado costuma

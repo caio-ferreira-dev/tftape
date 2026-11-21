@@ -83,9 +83,9 @@ TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {
     ASSERT_TRUE(ParseOcrRoundDetectorConfigJson(OcrRoundDetectorConfigSampleJson(), config));
 
     EXPECT_DOUBLE_EQ(0.15, config.band.x);
-    EXPECT_DOUBLE_EQ(0.04, config.band.y);
+    EXPECT_DOUBLE_EQ(0.0, config.band.y);
     EXPECT_DOUBLE_EQ(0.70, config.band.w);
-    EXPECT_DOUBLE_EQ(0.05, config.band.h);
+    EXPECT_DOUBLE_EQ(0.18, config.band.h);
     EXPECT_EQ(100, config.sample_interval_ms);
     EXPECT_EQ(500, config.warmup_ms);
     EXPECT_EQ(140, config.contrast_percent);

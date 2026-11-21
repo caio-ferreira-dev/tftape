@@ -1,6 +1,6 @@
 {
-  "_comment": "band = faixa normalizada (x,y,w,h) sobre a barra de estagio (evita timer/banners). Apos o OCR acertar, o detector trava um recorte menor e amplia o texto. transition_* afina o startMs pela mudanca visual; o rotulo continua vindo somente do OCR.",
-  "band": "0.15,0.04,0.70,0.05",
+  "_comment": "band = faixa normalizada (x,y,w,h) do topo da janela (inclui o contador e o timer). Apos o OCR acertar, o detector trava um recorte menor na palavra do contador e amplia o texto. transition_* afina o startMs pela mudanca visual; o rotulo continua vindo somente do OCR.",
+  "band": "0.15,0.0,0.70,0.18",
   "sample_interval_ms": "100",
   "warmup_ms": "500",
   "contrast_percent": "140",

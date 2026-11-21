@@ -9,11 +9,11 @@
 namespace tft {
 
 struct OcrRoundDetectorConfig {
-    /// Faixa estreita sobre a barra de estágio (y ~4%-9%). Timer, retratos e
-    /// banners ficam de fora, porque dominavam o OCR e o contador pequeno
-    /// passava despercebido. A largura/posição continuam configuráveis para
-    /// outros modos; quando o OCR acerta, o detector trava um recorte menor ainda.
-    NormalizedRect band{0.15, 0.04, 0.70, 0.05};
+    /// Faixa ampla do topo da janela. O OCR encontra o contador dentro dela
+    /// (o texto fica em y ~0%-4% e y ~9%-18%; a faixa estreita sobre a barra
+    /// sozinha não contém texto legível). Quando o OCR acerta, o detector
+    /// trava um recorte menor ao redor da palavra do contador.
+    NormalizedRect band{0.15, 0.0, 0.70, 0.18};
 
     /// Pré-processamento antes de chamar o OCR: cinza + contraste, e ampliação
     /// inteira quando o recorte do contador já foi localizado.

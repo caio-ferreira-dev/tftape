@@ -72,8 +72,8 @@ OcrRoundDetectorConfig DefaultOcrRoundDetectorConfig() { return OcrRoundDetector
 
 std::string OcrRoundDetectorConfigSampleJson() {
     return R"({
-  "_comment": "band = faixa normalizada (x,y,w,h) sobre a barra de estagio; o OCR tambem trava um recorte menor apos acertar o contador. contraste/ampliacao melhoram texto pequeno. transition_* afina o timestamp usando a mudanca visual, sem inventar rotulo.",
-  "band": "0.15,0.04,0.70,0.05",
+  "_comment": "band = faixa normalizada (x,y,w,h) do topo da janela (inclui o contador e o timer); o OCR trava um recorte menor ao redor do contador apos acertar. contraste/ampliacao melhoram texto pequeno. transition_* afina o timestamp usando a mudanca visual, sem inventar rotulo.",
+  "band": "0.15,0.0,0.70,0.18",
   "sample_interval_ms": "100",
   "warmup_ms": "500",
   "contrast_percent": "140",

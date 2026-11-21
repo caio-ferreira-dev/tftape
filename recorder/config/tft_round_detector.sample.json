@@ -1,6 +1,6 @@
 {
-  "_comment": "Exemplo de configuração do detector por OCR. band = faixa normalizada (x,y,w,h) sobre a barra de estágio; contraste/ampliação ajudam o texto pequeno; confirmation_* controla a confirmação por leituras esparsas; transition_* refina o startMs pela mudança visual. Se outro modo colocar a barra em posição diferente, ajuste band. Texto bruto vai só para o log.",
-  "band": "0.15,0.04,0.70,0.05",
+  "_comment": "Exemplo de configuração do detector por OCR. band = faixa normalizada (x,y,w,h) do topo da janela; contraste/ampliação ajudam o texto pequeno no recorte travado; confirmation_* controla a confirmação por leituras esparsas; transition_* refina o startMs pela mudança visual. Se outro modo colocar o barra em posição diferente, ajuste band. Texto bruto vai só para o log.",
+  "band": "0.15,0.0,0.70,0.18",
   "sample_interval_ms": "100",
   "warmup_ms": "500",
   "contrast_percent": "140",
