@@ -298,8 +298,13 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            if (session.PlaybackState == MediaPlaybackState.Ended)
+            // MediaPlaybackState não tem "Ended": se a posição está no fim, reinicia.
+            var duration = session.NaturalDuration;
+            if (duration > TimeSpan.Zero
+                && session.Position >= duration - TimeSpan.FromMilliseconds(250))
+            {
                 session.Position = TimeSpan.Zero;
+            }
             _vodPlayer.Play();
         }
         ShowVodControls();
