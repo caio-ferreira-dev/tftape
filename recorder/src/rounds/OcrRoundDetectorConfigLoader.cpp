@@ -74,9 +74,10 @@ std::string OcrRoundDetectorConfigSampleJson() {
     return R"({
   "_comment": "Faixa normalizada (x,y,w,h) do topo da janela onde o Windows OCR procura o contador. Deve cobrir a barra expandida e a compacta.",
   "band": "0.15,0.0,0.70,0.18",
-  "sample_interval_ms": "200",
+  "sample_interval_ms": "100",
   "warmup_ms": "500",
   "confirmation_samples": "2",
+  "confirmation_window_ms": "15000",
   "cooldown_ms": "1200",
   "source": "hud-ocr"
 }
@@ -120,6 +121,13 @@ bool ParseOcrRoundDetectorConfigJson(const std::string& json,
         if (!ParseInt(*value, cfg.confirmation_samples) || cfg.confirmation_samples < 1
             || cfg.confirmation_samples > 10) {
             if (error) *error = "confirmation_samples inválido (1..10)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "confirmation_window_ms")) {
+        if (!ParseInt(*value, cfg.confirmation_window_ms) || cfg.confirmation_window_ms < 1000
+            || cfg.confirmation_window_ms > 300'000) {
+            if (error) *error = "confirmation_window_ms inválido (1000..300000)";
             return false;
         }
     }

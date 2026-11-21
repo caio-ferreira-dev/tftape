@@ -1,9 +1,10 @@
 {
-  "_comment": "Exemplo de configuração do detector de rounds por OCR. band = faixa normalizada (x,y,w,h) no topo da janela; amplie-a se o contador sair da área. Texto bruto reconhecido vai apenas para o log.",
+  "_comment": "Exemplo de configuração do detector por OCR. band = faixa normalizada (x,y,w,h) no topo; sample_interval_ms = periodicidade da leitura; confirmation_samples/confirmation_window_ms = leituras do mesmo texto dentro da janela antes de marcar. Texto bruto vai só para o log.",
   "band": "0.15,0.0,0.70,0.18",
-  "sample_interval_ms": "200",
+  "sample_interval_ms": "100",
   "warmup_ms": "500",
   "confirmation_samples": "2",
+  "confirmation_window_ms": "15000",
   "cooldown_ms": "1200",
   "source": "hud-ocr"
 }

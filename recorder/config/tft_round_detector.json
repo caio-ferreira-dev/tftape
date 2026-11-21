@@ -1,9 +1,10 @@
 {
-  "_comment": "Faixa normalizada (x,y,w,h) do topo da janela onde o Windows OCR procura o contador de round (ex.: 1-1). Deve cobrir a barra expandida e a compacta.",
+  "_comment": "Faixa normalizada (x,y,w,h) do topo da janela onde o Windows OCR procura o contador (ex.: 1-1). Deve cobrir a barra expandida e a compacta.",
   "band": "0.15,0.0,0.70,0.18",
-  "sample_interval_ms": "200",
+  "sample_interval_ms": "100",
   "warmup_ms": "500",
   "confirmation_samples": "2",
+  "confirmation_window_ms": "15000",
   "cooldown_ms": "1200",
   "source": "hud-ocr"
 }

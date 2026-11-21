@@ -118,7 +118,7 @@ O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`;
 | M4 | Abrir `tft_round_detector.json` inválido (`band` fora de 0..1) | Core registra aviso no log/UI e grava com a configuração padrão | | A gravação não pode abortar |
 | M5 | Comparar MP4 gravado com OCR vs. sem OCR | Mesmo fps/contagem de frames/duração e nenhum drop perceptível; log sem muitas amostras descartadas | | Ver item 4 (inspeção do MP4) |
 
-> Limitação conhecida: o Windows OCR não fornece confiança numérica por palavra; `confidence` no sidecar é preenchido como `1.0` quando o texto casa com `N-M` e se repete em leituras consecutivas. Se algum estágio/modo não for reconhecido, ajuste `band` em `tft_round_detector.json` e valide pelo texto bruto no log antes de pedir prints de todos os estágios.
+> Limitação conhecida: o Windows OCR não fornece confiança numérica por palavra; `confidence` no sidecar é preenchido como `1.0` quando o texto casa com `N-M` e se repete em leituras dentro da janela. Se algum estágio/modo não for reconhecido, ajuste `band` em `tft_round_detector.json` e valide pelo texto bruto no log antes de pedir prints de todos os estágios.
 
 ## 4. Inspeção do MP4
 

@@ -46,9 +46,26 @@ TEST(OcrRoundTextTests, RejectsOutOfRangeAndMalformedLabels) {
     EXPECT_FALSE(TryParseRoundLabel("0-1", label));
     EXPECT_FALSE(TryParseRoundLabel("1-0", label));
     EXPECT_FALSE(TryParseRoundLabel("10-1", label));
-    EXPECT_FALSE(TryParseRoundLabel("1-10", label));
     EXPECT_FALSE(TryParseRoundLabel("abc", label));
     EXPECT_FALSE(TryParseRoundLabel("1-", label));
+}
+
+TEST(OcrRoundTextTests, RecoversCounterFromDirtyOcrLines) {
+    std::string label;
+
+    // Casos reais do log do recorder: o OCR cola o contador a outros números.
+    ASSERT_TRUE(TryParseRoundLabel("& 1-1 0", label));
+    EXPECT_EQ("1-1", label);
+
+    ASSERT_TRUE(TryParseRoundLabel("@ 27 | 1-2", label));
+    EXPECT_EQ("1-2", label);
+
+    ASSERT_TRUE(TryParseRoundLabel("& 1-4 | @ 14 A", label));
+    EXPECT_EQ("1-4", label);
+
+    // "1-10" é "1-1" colado a um zero vizinho; rounds só vão até 9.
+    ASSERT_TRUE(TryParseRoundLabel("1-10", label));
+    EXPECT_EQ("1-1", label);
 }
 
 TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {
@@ -59,9 +76,10 @@ TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {
     EXPECT_DOUBLE_EQ(0.0, config.band.y);
     EXPECT_DOUBLE_EQ(0.70, config.band.w);
     EXPECT_DOUBLE_EQ(0.18, config.band.h);
-    EXPECT_EQ(200, config.sample_interval_ms);
+    EXPECT_EQ(100, config.sample_interval_ms);
     EXPECT_EQ(500, config.warmup_ms);
     EXPECT_EQ(2, config.confirmation_samples);
+    EXPECT_EQ(15'000, config.confirmation_window_ms);
     EXPECT_EQ(1200, config.cooldown_ms);
     EXPECT_EQ("hud-ocr", config.source);
 }

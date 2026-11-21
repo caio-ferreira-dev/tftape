@@ -87,8 +87,8 @@ struct OcrRoundDetector::Impl {
         }
         last_queued_100ns_ = 0;
         candidate_label_.clear();
-        candidate_start_100ns_ = 0;
-        candidate_count_ = 0;
+        candidate_first_100ns_ = 0;
+        candidate_hits_ = 0;
         last_emitted_label_.clear();
         last_emission_100ns_ = 0;
         last_raw_.clear();
@@ -148,7 +148,7 @@ private:
         round.label = label;
         round.timestamp_100ns = timestamp_100ns;
         round.source = config_.source;
-        round.confidence = 1.0; // texto lido e confirmado em leituras consecutivas
+        round.confidence = 1.0; // texto lido e confirmado em duas ou mais leituras
         {
             std::lock_guard<std::mutex> lock(pending_mutex_);
             pending_.push_back(std::move(round));
@@ -156,34 +156,47 @@ private:
         last_emitted_label_ = label;
         last_emission_100ns_ = timestamp_100ns;
         candidate_label_.clear();
-        candidate_start_100ns_ = 0;
-        candidate_count_ = 0;
+        candidate_first_100ns_ = 0;
+        candidate_hits_ = 0;
         log::Info("Round detectado por OCR: " + label + " em " +
                   std::to_string(timestamp_100ns / kTicksPerMs) + " ms");
     }
 
     void OnRecognition(const std::string& label, std::int64_t timestamp_100ns) {
-        if (label.empty() || label == last_emitted_label_) {
+        // Leitura sem contador é comum: o OCR acerta o número pequeno só de vez
+        // em quando. Não pode apagar um candidato ainda dentro da janela.
+        if (label.empty()) return;
+
+        if (label == last_emitted_label_) {
             candidate_label_.clear();
-            candidate_start_100ns_ = 0;
-            candidate_count_ = 0;
+            candidate_first_100ns_ = 0;
+            candidate_hits_ = 0;
             return;
         }
 
         if (label != candidate_label_) {
             candidate_label_ = label;
-            candidate_start_100ns_ = timestamp_100ns;
-            candidate_count_ = 1;
+            candidate_first_100ns_ = timestamp_100ns;
+            candidate_hits_ = 1;
         } else {
-            ++candidate_count_;
+            ++candidate_hits_;
         }
 
-        if (candidate_count_ < config_.confirmation_samples) return;
+        const std::int64_t window =
+            static_cast<std::int64_t>(config_.confirmation_window_ms) * kTicksPerMs;
+        if (timestamp_100ns - candidate_first_100ns_ > window) {
+            // Candidato velho (ruído isolado): recomeça a contagem agora.
+            candidate_first_100ns_ = timestamp_100ns;
+            candidate_hits_ = 1;
+        }
+
+        if (candidate_hits_ < config_.confirmation_samples) return;
         if (timestamp_100ns - last_emission_100ns_
             < static_cast<std::int64_t>(config_.cooldown_ms) * kTicksPerMs) {
             return; // mantém o candidato para preservar o timestamp original
         }
-        Publish(candidate_label_, candidate_start_100ns_);
+        // Data no primeiro instante em que o texto foi lido, não na confirmação.
+        Publish(candidate_label_, candidate_first_100ns_);
     }
 
     void WorkerLoop() {
@@ -318,8 +331,8 @@ private:
 
     std::int64_t last_queued_100ns_ = 0;
     std::string candidate_label_;
-    std::int64_t candidate_start_100ns_ = 0;
-    int candidate_count_ = 0;
+    std::int64_t candidate_first_100ns_ = 0;
+    int candidate_hits_ = 0;
     std::string last_emitted_label_;
     std::int64_t last_emission_100ns_ = 0;
     std::string last_raw_;

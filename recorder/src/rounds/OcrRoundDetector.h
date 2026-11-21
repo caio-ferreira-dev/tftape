@@ -13,12 +13,16 @@ struct OcrRoundDetectorConfig {
     /// mesmo com a barra expandida/compacta ou com o indicador deslocado.
     NormalizedRect band{0.15, 0.0, 0.70, 0.18};
 
-    /// Frequência de amostragem. Um round muda em segundos, não por frame.
-    int sample_interval_ms = 200;
+    /// Frequência de amostragem. O OCR é rápido (~10-25 ms) e o contador é
+    /// pequeno: amostrar mais fino aumenta a chance de acertar a leitura.
+    int sample_interval_ms = 100;
     int warmup_ms = 500;
 
-    /// Mesmo texto precisa aparecer em N leituras antes de gerar o marcador.
+    /// O OCR acerta o contador de forma esporádica. Exigimos N leituras do
+    /// mesmo texto dentro de uma janela (não precisam ser consecutivas) e
+    /// datamos o marcador na primeira leitura daquele texto.
     int confirmation_samples = 2;
+    int confirmation_window_ms = 15'000;
     int cooldown_ms = 1200;
 
     std::string source = "hud-ocr";

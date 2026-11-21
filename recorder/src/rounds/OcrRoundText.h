@@ -6,8 +6,9 @@
 namespace tft {
 
 /// Normaliza o texto devolvido pelo OCR: unifica os vários tipos de hífen,
-/// descarta letras/pontuação e converte confusões comuns (I/l/L -> 1).
-/// Exemplo: "ROUND 1 – 1" -> "1-1".
+/// preserva separadores entre grupos de dígitos (para não colar o timer ao
+/// contador) e converte confusões comuns (I/l/L -> 1).
+/// Exemplos: "ROUND 1 – 1" -> "1-1"; "@ 27 | 1-2" -> "27|1-2".
 std::string NormalizeOcrRoundText(std::string_view text);
 
 /// Encontra o primeiro contador válido (1-1 ... 9-9) em qualquer parte do texto.

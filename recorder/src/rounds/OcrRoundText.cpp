@@ -82,32 +82,38 @@ bool ParsePattern(std::string_view normalized, std::string& label, bool exact) {
     for (std::size_t dash = 0; dash < normalized.size(); ++dash) {
         if (normalized[dash] != '-') continue;
 
+        // Estágio: todos os dígitos contíguos antes do hífen (1 ou 2 algarismos).
         std::size_t begin = dash;
         while (begin > 0 && (dash - begin) < 2 && IsDigit(normalized[begin - 1])) --begin;
         if (begin == dash) continue;
         if (begin > 0 && IsDigit(normalized[begin - 1])) continue;
-
-        std::size_t end = dash + 1;
-        while (end < normalized.size() && (end - dash - 1) < 2 && IsDigit(normalized[end])) ++end;
-        if (end == dash + 1) continue;
-        if (end < normalized.size() && IsDigit(normalized[end])) continue;
-
-        if (exact && (begin != 0 || end != normalized.size())) continue;
+        if (exact && begin != 0) continue;
 
         int stage_number = 0;
         for (std::size_t k = begin; k < dash; ++k) {
             stage_number = stage_number * 10 + ToDigit(normalized[k]);
         }
-        int round_number = 0;
-        for (std::size_t k = dash + 1; k < end; ++k) {
-            round_number = round_number * 10 + ToDigit(normalized[k]);
-        }
-
         if (stage_number < 1 || stage_number > 9) continue;
-        if (round_number < 1 || round_number > 9) continue;
 
-        label = std::to_string(stage_number) + "-" + std::to_string(round_number);
-        return true;
+        // Rodada: tenta 1 algarismo antes de 2. Isso recupera leituras como
+        // "1-10" (contador "1-1" colado a um "0" vizinho do HUD).
+        bool matched = false;
+        for (std::size_t round_len = 1; round_len <= 2 && !matched; ++round_len) {
+            if (dash + round_len >= normalized.size()) break;
+            int round_number = 0;
+            bool valid = true;
+            for (std::size_t k = 1; k <= round_len; ++k) {
+                const char c = normalized[dash + k];
+                if (!IsDigit(c)) { valid = false; break; }
+                round_number = round_number * 10 + ToDigit(c);
+            }
+            if (!valid || round_number < 1 || round_number > 9) continue;
+            if (exact && dash + round_len + 1 != normalized.size()) continue;
+
+            label = std::to_string(stage_number) + "-" + std::to_string(round_number);
+            matched = true;
+        }
+        if (matched) return true;
     }
     return false;
 }
@@ -116,27 +122,32 @@ bool ParsePattern(std::string_view normalized, std::string& label, bool exact) {
 
 std::string NormalizeOcrRoundText(std::string_view text) {
     std::string out;
-    bool last_was_dash = false;
+    bool last_was_sep = true; // início conta como separador
 
     std::size_t i = 0;
     std::uint32_t cp = 0;
     while (NextCodePoint(text, i, cp)) {
         if (cp >= '0' && cp <= '9') {
             out.push_back(static_cast<char>(cp));
-            last_was_dash = false;
+            last_was_sep = false;
         } else if (IsDashCodePoint(cp)) {
-            if (!out.empty() && !last_was_dash) {
-                out.push_back('-');
-                last_was_dash = true;
-            }
+            // Espaços ao redor do hífen fazem parte dele, não viram separador.
+            if (!out.empty() && out.back() == '|') out.pop_back();
+            out.push_back('-');
+            last_was_sep = true;
         } else if (cp == 'I' || cp == 'i' || cp == 'l' || cp == 'L') {
             out.push_back('1');
-            last_was_dash = false;
+            last_was_sep = false;
+        } else if (!last_was_sep) {
+            out.push_back('|');
+            last_was_sep = true;
         }
     }
 
-    while (!out.empty() && out.back() == '-') out.pop_back();
-    return out;
+    while (!out.empty() && (out.back() == '|' || out.back() == '-')) out.pop_back();
+    const auto first = out.find_first_not_of('|');
+    if (first == std::string::npos) return {};
+    return out.substr(first);
 }
 
 bool TryParseRoundLabel(std::string_view text, std::string& label) {
