@@ -24,4 +24,14 @@
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="CornerRadius" Value="6" />
     </Style>
+
+    <!-- TabView: abas com fundo sutil mesmo quando inativas; seleção em azul primário com texto accent. -->
+    <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="{StaticResource Color.Surface}" Opacity="0.45" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="{StaticResource Color.Surface}" Opacity="0.9" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed" Color="{StaticResource Color.Primary}" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="{StaticResource Color.Primary}" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForeground" Color="{StaticResource Color.TextSecondary}" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver" Color="{StaticResource Color.TextPrimary}" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected" Color="{StaticResource Color.Accent}" />
+    <StaticResource x:Key="TabViewItemSeparator" ResourceKey="Brush.Divider" />
 </ResourceDictionary>

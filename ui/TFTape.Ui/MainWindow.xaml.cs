@@ -1,5 +1,6 @@
 using System;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -41,6 +42,8 @@ public sealed partial class MainWindow : Window
 
         InitializeComponent();
 
+        ConfigureAppTitleBar();
+
         _controlsHideTimer = _uiQueue.CreateTimer();
         _controlsHideTimer.Interval = TimeSpan.FromSeconds(3);
         _controlsHideTimer.IsRepeating = false;
@@ -52,6 +55,44 @@ public sealed partial class MainWindow : Window
         if (Content is FrameworkElement root) root.Loaded += OnRootLoaded;
         // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
         Closed += OnClosed;
+    }
+
+    /// <summary>
+    /// Substitui a barra padrão do Windows por uma barra desenhada pelo app. Os botões
+    /// de minimizar/maximizar/fechar continuam sendo os do sistema, mas recebem a paleta
+    /// do projeto; o ícone da janela é ocultado.
+    /// </summary>
+    private void ConfigureAppTitleBar()
+    {
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+
+        if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+
+        try
+        {
+            var titleBar = AppWindow.TitleBar;
+            titleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
+
+            // #0F174E / #E2E8F0 / #8699BA / #2963AA / #0CDBEB / #0F172A
+            titleBar.BackgroundColor = Windows.UI.Color.FromArgb(255, 0x0F, 0x17, 0x4E);
+            titleBar.ForegroundColor = Windows.UI.Color.FromArgb(255, 0xE2, 0xE8, 0xF0);
+            titleBar.InactiveBackgroundColor = Windows.UI.Color.FromArgb(255, 0x0F, 0x17, 0x2A);
+            titleBar.InactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x86, 0x99, 0xBA);
+
+            titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(255, 0x0F, 0x17, 0x4E);
+            titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 0xE2, 0xE8, 0xF0);
+            titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(255, 0x29, 0x63, 0xAA);
+            titleBar.ButtonHoverForegroundColor = Windows.UI.Color.FromArgb(255, 0xE2, 0xE8, 0xF0);
+            titleBar.ButtonPressedBackgroundColor = Windows.UI.Color.FromArgb(255, 0x0C, 0xDB, 0xEB);
+            titleBar.ButtonPressedForegroundColor = Windows.UI.Color.FromArgb(255, 0x0F, 0x17, 0x2A);
+            titleBar.ButtonInactiveBackgroundColor = Windows.UI.Color.FromArgb(255, 0x0F, 0x17, 0x4E);
+            titleBar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0x86, 0x99, 0xBA);
+        }
+        catch
+        {
+            // Cores são opcionais: se a plataforma recusar, a barra customizada continua funcionando.
+        }
     }
 
     private async void OnRootLoaded(object sender, RoutedEventArgs e) => await VodLibrary.RefreshAsync();
