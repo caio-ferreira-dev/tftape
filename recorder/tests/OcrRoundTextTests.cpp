@@ -18,7 +18,7 @@ TEST(OcrRoundTextTests, NormalizesHyphenVariantsAndOcrConfusions) {
     EXPECT_EQ("1-1", NormalizeOcrRoundText("1—1"));     // em dash
     EXPECT_EQ("1-1", NormalizeOcrRoundText("l-l"));     // confusão l/L -> 1
     EXPECT_EQ("1-1", NormalizeOcrRoundText("I-I"));
-    EXPECT_EQ("ROUND1-1", NormalizeOcrRoundText("ROUND 1 - 1"));
+    EXPECT_EQ("1-1", NormalizeOcrRoundText("ROUND 1 - 1")); // letras descartadas
 }
 
 TEST(OcrRoundTextTests, ParsesRoundLabelInsideRecognizedText) {

@@ -26,6 +26,58 @@ bool IsDashCodePoint(std::uint32_t cp) {
     }
 }
 
+bool IsSpaceCodePoint(std::uint32_t cp) {
+    return cp == 0x0020 || cp == 0x0009 || cp == 0x000A || cp == 0x000D
+        || cp == 0x00A0 || (cp >= 0x2000 && cp <= 0x200A);
+}
+
+/// Decodifica um ponto de código UTF-8. Caracteres inválidos são ignorados
+/// pelo chamador (cp = 0xFFFD).
+bool NextCodePoint(std::string_view text, std::size_t& i, std::uint32_t& cp) {
+    if (i >= text.size()) return false;
+
+    const auto lead = static_cast<unsigned char>(text[i]);
+    std::size_t len = 0;
+    if (lead < 0x80) {
+        cp = lead;
+        len = 1;
+    } else if ((lead & 0xE0) == 0xC0) {
+        cp = lead & 0x1F;
+        len = 2;
+    } else if ((lead & 0xF0) == 0xE0) {
+        cp = lead & 0x0F;
+        len = 3;
+    } else if ((lead & 0xF8) == 0xF0) {
+        cp = lead & 0x07;
+        len = 4;
+    } else {
+        cp = 0xFFFD;
+        ++i;
+        return true;
+    }
+
+    if (i + len > text.size()) {
+        cp = 0xFFFD;
+        ++i;
+        return true;
+    }
+    for (std::size_t j = 1; j < len; ++j) {
+        const auto next = static_cast<unsigned char>(text[i + j]);
+        if ((next & 0xC0) != 0x80) {
+            len = 0;
+            break;
+        }
+        cp = (cp << 6) | (next & 0x3F);
+    }
+    if (len == 0) {
+        cp = 0xFFFD;
+        ++i;
+        return true;
+    }
+    i += len;
+    return true;
+}
+
 bool ParsePattern(std::string_view normalized, std::string& label, bool exact) {
     for (std::size_t dash = 0; dash < normalized.size(); ++dash) {
         if (normalized[dash] != '-') continue;
@@ -67,37 +119,8 @@ std::string NormalizeOcrRoundText(std::string_view text) {
     bool last_was_dash = false;
 
     std::size_t i = 0;
-    while (i < text.size()) {
-        const auto lead = static_cast<unsigned char>(text[i]);
-        std::uint32_t cp = 0;
-        std::size_t len = 0;
-
-        if (lead < 0x80) {
-            cp = lead;
-            len = 1;
-        } else if ((lead & 0xE0) == 0xC0) {
-            len = 2;
-            cp = lead & 0x1F;
-        } else if ((lead & 0xF0) == 0xE0) {
-            len = 3;
-            cp = lead & 0x0F;
-        } else if ((lead & 0xF8) == 0xF0) {
-            len = 4;
-            cp = lead & 0x07;
-        } else {
-            ++i;
-            continue;
-        }
-
-        if (i + len > text.size()) { ++i; continue; }
-        for (std::size_t j = 1; j < len; ++j) {
-            const auto next = static_cast<unsigned char>(text[i + j]);
-            if ((next & 0xC0) != 0x80) { len = 0; break; }
-            cp = (cp << 6) | (next & 0x3F);
-        }
-        if (len == 0) { ++i; continue; }
-        i += len;
-
+    std::uint32_t cp = 0;
+    while (NextCodePoint(text, i, cp)) {
         if (cp >= '0' && cp <= '9') {
             out.push_back(static_cast<char>(cp));
             last_was_dash = false;
@@ -121,7 +144,22 @@ bool TryParseRoundLabel(std::string_view text, std::string& label) {
 }
 
 bool ParseExactRoundLabel(std::string_view text, std::string& label) {
-    return ParsePattern(NormalizeOcrRoundText(text), label, true);
+    // Texto bruto só pode conter dígitos, espaços e hífen: nada de "ROUND".
+    std::string compact;
+    std::size_t i = 0;
+    std::uint32_t cp = 0;
+    while (NextCodePoint(text, i, cp)) {
+        if (cp >= '0' && cp <= '9') {
+            compact.push_back(static_cast<char>(cp));
+        } else if (IsDashCodePoint(cp)) {
+            compact.push_back('-');
+        } else if (IsSpaceCodePoint(cp)) {
+            continue;
+        } else {
+            return false;
+        }
+    }
+    return ParsePattern(compact, label, true);
 }
 
 } // namespace tft
