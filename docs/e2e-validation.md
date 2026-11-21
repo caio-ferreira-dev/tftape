@@ -88,7 +88,7 @@ Verificações por perfil:
 
 | ID | Cenário | Resultado esperado | Resultado | Observação |
 |---|---|---|---|---|
-| S1 | Gravar ~10 s e parar pelo botão **Parar** | Além do MP4, existe `<arquivo>.mp4.tftape.json` com `rounds: []`, `durationMs` coerente e `createdAtUtc` válido | | |
+| S1 | Gravar ~10 s e parar pelo botão **Parar** | Além do MP4, existe `<arquivo>.mp4.tftape.json` com `rounds` coerente com a detecção (pode ser vazio se o contador não mudar), `durationMs` coerente e `createdAtUtc` válido | | |
 | S2 | Fechar a UI durante a gravação | `shutdown` finaliza o MP4 **e** grava o sidecar | | Mesmo caminho R4 |
 | S3 | Pasta com acento | Nome do sidecar e conteúdo JSON legíveis, sem mojibake | | Mesmo caminho R6 |
 | S4 | Tornar a pasta de destino somente leitura após iniciar | Se o sidecar falhar, aparece aviso amarelo e o MP4 permanece tocável | | Ajustar permissão depois |
@@ -102,11 +102,21 @@ O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`;
 |---|---|---|---|---|
 | D1 | Abrir a aba **VODs** com a pasta de gravação já preenchida | Lista mostra os MP4 da pasta, mais recentes primeiro; primeiro VOD selecionado e tocando | | Sem clicar em nada |
 | D2 | Clicar em outro VOD da lista | Player troca de vídeo; título e metadados acompanham a seleção | | |
-| D3 | VOD com sidecar válido | Linha mostra data, perfil, duração e quantidade de rounds; sem aviso amarelo | | rounds ainda vazio nesta fase |
+| D3 | VOD com sidecar válido | Linha mostra data, perfil, duração e quantidade de rounds; sem aviso amarelo | | |
 | D4 | MP4 sem sidecar ou com `.json` corrompido | VOD continua na lista, com aviso amarelo "Metadados inválidos" quando houver sidecar quebrado | | **Não pode travar a UI** |
 | D5 | Trocar a pasta pelo botão **Escolher pasta** e clicar em **Atualizar** | Lista recarrega; nova pasta é lembrada ao fechar/reabrir o app | | `vod_directory.txt` separado de `output_directory.txt` |
 | D6 | Fechar a janela com um VOD tocando | Player é liberado e o arquivo não fica travado; core recebe `shutdown` | | Importante no Windows |
-| D7 | Verificar botões de rounds | Com `rounds: []`, aparece "Nenhum round detectado nesta gravação." e nenhum botão | | Botões só aparecerão na fase 2 |
+| D7 | Verificar botões de rounds | Com `rounds: []`, aparece "Nenhum round detectado nesta gravação." e nenhum botão; com rounds, um botão por marcador | | |
+
+### 3.6 Marcadores de round (ROI/HUD)
+
+| ID | Cenário | Resultado esperado | Resultado | Observação |
+|---|---|---|---|---|
+| M1 | Gravar do início de um jogo até a primeira virada do contador | Sidecar contém `1-1` em `startMs: 0` e `1-2` no instante da virada; botões na aba VODs fazem seek para esses instantes | | Ajustar a ROI em `tft_round_detector.json` com um print real se necessário |
+| M2 | Gravar com HUD/contador fora da ROI ou sem mudança | `rounds` pode ficar vazio, sem aviso de erro e sem afetar o MP4 | | Config inválida gera aviso amarelo e usa defaults |
+| M3 | Abrir `tft_round_detector.json` inválido (ROI fora de 0..1) | Core registra aviso no log/UI e grava com a configuração padrão | | A gravação não pode abortar |
+
+> Limitação conhecida: sem OCR, os rótulos são atribuídos pela sequência configurada. Se a gravação começar no meio de um jogo, ajuste `labels` no JSON para começar no round atual; a detecção em si continua válida.
 
 ## 4. Inspeção do MP4
 
@@ -132,17 +142,19 @@ Checar:
 - Início/fim do recorder e exceções fatais.
 - Carregamento das regras de janela e candidatos avaliados.
 - Regra que selecionou/excluiu cada janela e motivo de falha/ambiguidade.
+- Carregamento do `tft_round_detector.json`, avisos de configuração inválida e linhas `Round detectado: <label> em <ms> ms`.
 - Avisos de fontes opcionais e erros de áudio do jogo.
 - Linhas com acentos legíveis (sem `indisponÃvel`).
 
 ## 6. Critérios de aceite
 
-- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (10 testes C++ e 16 testes xUnit adicionados depois).
+- [x] 74 testes C++ e 11 testes xUnit passando na validação de 19/11 (22 testes C++ e 16 testes xUnit adicionados depois).
 - [x] V1–V4: MP4 H.264 válido, resolução/fps/bitrate corretos.
 - [x] A1–A7: áudio do jogo sempre presente quando habilitado; falhas opcionais viram aviso; falha do jogo aborta.
 - [x] R1–R9: nenhuma captura indevida, finalização segura e mensagens claras.
 - [ ] S1–S5: sidecar gravado em stop/shutdown, JSON íntegro e aviso em caso de falha. Geração básica confirmada manualmente; checklist formal pendente.
 - [ ] D1–D7: aba VODs lista, reproduz, troca de vídeo, tolera sidecar inválido e libera o player ao fechar.
+- [ ] M1–M3: marcadores de round gerados na ROI correta, seek na aba VODs e fallback seguro em configuração inválida.
 - [x] `ffprobe` sem erros e sincronia A/V aceitável.
 - [x] Logs completos e legíveis.
 
@@ -152,8 +164,8 @@ Checar:
 |---|---|
 | Data da validação | 19/11/2026 |
 | Windows / build | Windows 10 10.0.26100.9974 (24H2) |
-| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 (sidecar) e D1–D7 (aba VODs) ficaram pendentes para a próxima validação no Windows. |
+| Resultado geral | OK — todos os casos da validação de 19/11 (V1–V4, A1–A7, R1–R9) e pré-requisitos automáticos passaram. Os casos S1–S5 (sidecar), D1–D7 (aba VODs) e M1–M3 (marcadores) ficaram pendentes para a próxima validação no Windows. |
 | Arquivos MP4 de referência | MP4 dos perfis V1–V4, conferidos na UI e inspecionados com `ffprobe` |
 | Exceções documentadas | Nenhuma |
 
-Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. As seções 3.4 e 3.5 e os casos S1–S5/D1–D7 foram acrescentados depois com as features de sidecar e biblioteca de VODs e ainda precisam de execução no Windows.
+Registro fechado em 19/11/2026 com todos os casos daquela data marcados como `OK`. As seções 3.4 a 3.6 e os casos S1–S5/D1–D7/M1–M3 foram acrescentados depois com as features de sidecar, biblioteca de VODs e marcadores de round e ainda precisam de execução no Windows.

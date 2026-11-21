@@ -15,12 +15,17 @@
 
 namespace tft {
 
+class IRoundDetector;
+
 class RecordingSession {
 public:
     // Injeção opcional das dependências (útil para testes/integração).
+    // Quando nenhum detector é injetado, a sessão carrega tft_round_detector.json
+    // (ou usa a configuração padrão) no início de cada gravação.
     explicit RecordingSession(std::shared_ptr<IMp4Writer> writer = nullptr,
                               std::shared_ptr<ISteadyClock> steady_clock = nullptr,
-                              std::shared_ptr<IClock> system_clock = nullptr);
+                              std::shared_ptr<IClock> system_clock = nullptr,
+                              std::shared_ptr<IRoundDetector> round_detector = nullptr);
     ~RecordingSession();
 
     /// `warnings` recebe avisos de fontes opcionais indisponíveis (a gravação segue).
@@ -53,6 +58,7 @@ private:
 
     WgcCaptureSource capture_;
     std::shared_ptr<IMp4Writer> writer_;
+    std::shared_ptr<IRoundDetector> round_detector_;
     AudioMixer mixer_;
     std::shared_ptr<class IAudioSource> game_src_;
     std::shared_ptr<class IAudioSource> sys_src_;

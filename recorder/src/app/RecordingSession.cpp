@@ -14,6 +14,10 @@
 #include "audio/WasapiSystemLoopbackSource.h"
 #include "encode/MfMp4Writer.h"
 #include "output/OutputPath.h"
+#include "rounds/IRoundDetector.h"
+#include "rounds/RoundDetector.h"
+#include "rounds/RoundDetectorConfigLoader.h"
+#include "util/Logger.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -27,12 +31,14 @@ namespace tft {
 
 RecordingSession::RecordingSession(std::shared_ptr<IMp4Writer> writer,
                                    std::shared_ptr<ISteadyClock> steady_clock,
-                                   std::shared_ptr<IClock> system_clock)
+                                   std::shared_ptr<IClock> system_clock,
+                                   std::shared_ptr<IRoundDetector> round_detector)
     : writer_(writer ? std::move(writer) : std::make_shared<MfMp4Writer>()),
       steady_clock_(steady_clock ? std::move(steady_clock)
                                  : std::make_shared<SteadyClock>()),
       system_clock_(system_clock ? std::move(system_clock)
-                                 : std::make_shared<SystemClock>()) {}
+                                 : std::make_shared<SystemClock>()),
+      round_detector_(std::move(round_detector)) {}
 
 RecordingSession::~RecordingSession() { std::string e; Stop(e); }
 
@@ -148,6 +154,29 @@ bool RecordingSession::Start(const RecordingSettings& settings, void* window_han
     }
     if (warnings) *warnings = audio_check.warnings;
 
+    // Rounds: configuração carregada uma vez por gravação. A ausência do arquivo
+    // não é erro; uma configuração inválida gera aviso mas não impede a gravação.
+    if (!round_detector_) {
+        RoundDetectorConfig detector_config = DefaultRoundDetectorConfig();
+        const std::string config_path = FindRoundDetectorConfigPath();
+        std::string config_error;
+        if (!config_path.empty()) {
+            if (LoadRoundDetectorConfig(config_path, detector_config, &config_error)) {
+                log::Debug("Detector de rounds usando " + config_path);
+            } else {
+                detector_config = DefaultRoundDetectorConfig();
+                const std::string warning =
+                    "Configuração de rounds inválida (" + config_error + "); usando padrão.";
+                log::Warning(warning);
+                if (warnings) warnings->push_back(warning);
+            }
+        } else {
+            log::Debug("Configuração de rounds ausente; usando ROI padrão.");
+        }
+        round_detector_ = std::make_shared<RoundDetector>(std::move(detector_config));
+    }
+    round_detector_->Reset();
+
     // Sem isolamento por processo, o loopback do dispositivo já contém todo o áudio:
     // manter "jogo" e "sistema" juntos duplicaria o sinal (distorção).
     const AudioSourceSelection selection = DeduplicateAudioSources(
@@ -188,14 +217,30 @@ bool RecordingSession::Stop(std::string& error) {
     writer_->Close();
 
     const auto profile = settings_.ToProfile();
+    const std::int64_t durationMs = duration100ns / 10'000; // 100 ns -> ms
+
     summary_ = RecordingSidecarData{};
     summary_.videoFile = std::filesystem::path(output_path_).filename().string();
     summary_.createdAtUtc = FormatUtcIso8601(start_wall_);
-    summary_.durationMs = duration100ns / 10'000; // 100 ns -> ms
+    summary_.durationMs = durationMs;
     summary_.resolution = ToString(settings_.resolution);
     summary_.fps = profile.fps;
-    // Fase 2 (ROI/HUD) preencherá summary_.rounds.
-    summary_.rounds.clear();
+
+    // As threads já terminaram: todos os marcadores detectados estão disponíveis.
+    if (round_detector_) {
+        for (auto& detected : round_detector_->DrainDetections()) {
+            RoundMarker marker;
+            marker.label = std::move(detected.label);
+            marker.startMs = detected.timestamp_100ns / 10'000;
+            if (marker.startMs > durationMs) marker.startMs = durationMs;
+            marker.source = std::move(detected.source);
+            marker.confidence = detected.confidence;
+            if (marker.label.empty()) continue;
+            log::Info("Round detectado: " + marker.label + " em " +
+                      std::to_string(marker.startMs) + " ms");
+            summary_.rounds.push_back(std::move(marker));
+        }
+    }
     return true;
 }
 
@@ -250,6 +295,15 @@ bool RecordingSession::WriteVideoTick(int64_t now_100ns, std::vector<uint8_t>& b
     auto* tex = reinterpret_cast<ID3D11Texture2D*>(wf.texture);
     int w = 0, h = 0, stride = 0;
     if (!ReadbackTextureBGRA(dev, ctx.Get(), tex, bgra, w, h, stride)) return false;
+    if (round_detector_ && bgra.data() && w > 0 && h > 0 && stride > 0) {
+        FrameView frame{};
+        frame.bgra = bgra.data();
+        frame.width = w;
+        frame.height = h;
+        frame.stride = stride;
+        frame.timestamp_100ns = now_100ns;
+        round_detector_->ProcessFrame(frame);
+    }
     auto profile = settings_.ToProfile();
     BgraToNv12(bgra.data(), w, h, stride, nv12, profile.width, profile.height);
     VideoFrameData vfd{};

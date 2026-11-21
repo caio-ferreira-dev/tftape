@@ -19,6 +19,8 @@ add_library(recorder_core
   src/capture/WindowRules.cpp
   src/capture/TftWindowFinder.cpp
   src/capture/WgcCaptureSource.cpp
+  src/rounds/RoundDetector.cpp
+  src/rounds/RoundDetectorConfigLoader.cpp
   src/app/CommandProtocol.cpp
   src/app/RecorderController.cpp
   src/app/RecordingSession.cpp
