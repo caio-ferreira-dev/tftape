@@ -12,7 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include "rounds/OcrImagePrep.h"
 #include "rounds/OcrRoundText.h"
+#include "rounds/OcrTransition.h"
 #include "util/Logger.h"
 
 #if defined(_WIN32)
@@ -44,6 +46,28 @@ struct OcrSample {
     int width = 0;
     int height = 0;
     std::int64_t timestamp_100ns = 0;
+};
+
+struct OcrMatchRect {
+    float x = 0.0f;
+    float y = 0.0f;
+    float w = 0.0f;
+    float h = 0.0f;
+};
+
+struct RecognizeOutput {
+    std::string label;
+    std::string raw;
+    OcrMatchRect rect;  // coordenadas do bitmap processado (já ampliado)
+    bool has_rect = false;
+};
+
+/// Recorte do contador dentro da faixa `band`, descoberto a partir da
+/// BoundingRect das palavras reconhecidas. Válido somente na worker.
+struct CounterLock {
+    bool valid = false;
+    ImageRect rect{};
+    int misses = 0;
 };
 
 bool CropBand(const FrameView& frame, const NormalizedRect& band, OcrSample& out) {
@@ -93,6 +117,8 @@ struct OcrRoundDetector::Impl {
         last_emission_100ns_ = 0;
         last_raw_.clear();
         sample_count_ = 0;
+        lock_ = CounterLock{};
+        history_.clear();
         warned_no_engine_ = false;
         stop_ = false;
         worker_ = std::thread([this]() { WorkerLoop(); });
@@ -162,7 +188,9 @@ private:
                   std::to_string(timestamp_100ns / kTicksPerMs) + " ms");
     }
 
-    void OnRecognition(const std::string& label, std::int64_t timestamp_100ns) {
+    void OnRecognition(const std::string& label,
+                       std::int64_t timestamp_100ns,
+                       const std::vector<OcrSignatureSample>& history) {
         // Leitura sem contador é comum: o OCR acerta o número pequeno só de vez
         // em quando. Não pode apagar um candidato ainda dentro da janela.
         if (label.empty()) return;
@@ -203,7 +231,20 @@ private:
             return; // mantém o candidato para preservar o timestamp original
         }
         // Data no primeiro instante em que o texto foi lido, não na confirmação.
-        Publish(candidate_label_, candidate_first_100ns_);
+        // Quando há uma mudança visual nítida logo antes dessa leitura, usa o
+        // instante da mudança — o rótulo continua sendo o lido pelo OCR.
+        std::int64_t start = candidate_first_100ns_;
+        const std::int64_t visual = FindOcrTransition(
+            history, candidate_first_100ns_,
+            static_cast<std::int64_t>(config_.transition_lookback_ms) * kTicksPerMs,
+            config_.transition_min_diff);
+        if (visual != 0) start = visual;
+        if (start != candidate_first_100ns_) {
+            log::Debug("OCR: transição visual em " + std::to_string(start / kTicksPerMs) +
+                       " ms (1ª leitura em " +
+                       std::to_string(candidate_first_100ns_ / kTicksPerMs) + " ms)");
+        }
+        Publish(candidate_label_, start);
     }
 
     void WorkerLoop() {
@@ -253,19 +294,21 @@ private:
             }
 
             const auto started = std::chrono::steady_clock::now();
-            std::string label;
-            std::string raw;
+            RecognizeOutput output;
             try {
-                Recognize(engine, sample, label, raw);
+                Recognize(engine, sample, output);
             } catch (...) {
-                label.clear();
+                output.label.clear();
+                output.raw.clear();
+                output.has_rect = false;
             }
             const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - started).count();
 
-            if (!raw.empty() && raw != last_raw_) {
-                log::Debug("OCR bruto: " + raw + " -> " + (label.empty() ? "(sem contador)" : label));
-                last_raw_ = raw;
+            if (!output.raw.empty() && output.raw != last_raw_) {
+                log::Debug("OCR bruto: " + output.raw + " -> " +
+                           (output.label.empty() ? "(sem contador)" : output.label));
+                last_raw_ = output.raw;
             }
             if (++sample_count_ % 20 == 0) {
                 std::size_t depth = 0;
@@ -275,9 +318,21 @@ private:
                 }
                 log::Debug("OCR: " + std::to_string(elapsed_ms) + " ms, fila=" +
                            std::to_string(depth) + ", descartadas=" +
-                           std::to_string(dropped_samples_.load()));
+                           std::to_string(dropped_samples_.load()) +
+                           ", lock=" + (lock_.valid ? "sim" : "nao"));
             }
-            OnRecognition(label, sample.timestamp_100ns);
+
+            UpdateCounterLock(output, sample);
+            history_.push_back({sample.timestamp_100ns,
+                                MakeBgraSignature(sample.pixels.data(), sample.width,
+                                                  sample.height, sample.width * 4, 32, 8)});
+            while (!history_.empty()
+                   && sample.timestamp_100ns - history_.front().timestamp_100ns
+                      > static_cast<std::int64_t>(config_.transition_lookback_ms) * kTicksPerMs
+                        + static_cast<std::int64_t>(config_.sample_interval_ms) * kTicksPerMs) {
+                history_.pop_front();
+            }
+            OnRecognition(output.label, sample.timestamp_100ns, history_);
 #else
             (void)sample;
 #endif
@@ -292,19 +347,11 @@ private:
     }
 
 #if defined(_WIN32)
-    static void Recognize(const WOC::OcrEngine& engine,
-                          const OcrSample& sample,
-                          std::string& label,
-                          std::string& raw) {
-        winrt::array_view<const std::uint8_t> bytes(sample.pixels.data(), sample.pixels.size());
-        const auto buffer = winrt::Windows::Security::Cryptography::CryptographicBuffer::
-            CreateFromByteArray(bytes);
-        const auto bitmap = WGI::SoftwareBitmap::CreateCopyFromBuffer(
-            buffer, WGI::BitmapPixelFormat::Bgra8, sample.width, sample.height,
-            WGI::BitmapAlphaMode::Straight);
-
-        const auto result = engine.RecognizeAsync(bitmap).get();
-        std::string joined;
+    static void CollectFromResult(const WOC::OcrResult& result,
+                                  std::string& label,
+                                  std::string& joined,
+                                  OcrMatchRect& match,
+                                  bool& has_match) {
         std::string loose;
         bool exact_found = false;
         for (const auto& line : result.Lines()) {
@@ -314,15 +361,143 @@ private:
             joined += text;
 
             std::string candidate;
-            if (!exact_found && ParseExactRoundLabel(text, candidate)) {
+            const bool exact = ParseExactRoundLabel(text, candidate);
+            const bool parsed = exact || TryParseRoundLabel(text, candidate);
+            if (!parsed) continue;
+
+            if (!has_match) {
+                // BoundingRect da linha inteira; o contador é o texto mais
+                // curto da faixa estreita. União das palavras que casaram.
+                auto rect = line.BoundingRect();
+                match = {rect.X, rect.Y, rect.Width, rect.Height};
+                has_match = true;
+            }
+            if (!exact_found && exact) {
                 label = std::move(candidate);
                 exact_found = true;
-            } else if (loose.empty() && TryParseRoundLabel(text, candidate)) {
+            } else if (loose.empty() && !exact) {
                 loose = std::move(candidate);
             }
         }
         if (!exact_found) label = std::move(loose);
-        raw = std::move(joined);
+    }
+
+    static bool RunOcr(const WOC::OcrEngine& engine,
+                       const std::vector<std::uint8_t>& pixels,
+                       int width,
+                       int height,
+                       std::string& label,
+                       std::string& raw,
+                       OcrMatchRect& match,
+                       bool& has_match) {
+        winrt::array_view<const std::uint8_t> bytes(pixels.data(), pixels.size());
+        const auto buffer = winrt::Windows::Security::Cryptography::CryptographicBuffer::
+            CreateFromByteArray(bytes);
+        const auto bitmap = WGI::SoftwareBitmap::CreateCopyFromBuffer(
+            buffer, WGI::BitmapPixelFormat::Bgra8, width, height,
+            WGI::BitmapAlphaMode::Straight);
+        const auto result = engine.RecognizeAsync(bitmap).get();
+        CollectFromResult(result, label, raw, match, has_match);
+        return true;
+    }
+
+    void Recognize(const WOC::OcrEngine& engine,
+                   const OcrSample& sample,
+                   RecognizeOutput& output) {
+        // Etapa 1: faixa estreita, cinza/contraste, sem ampliação (o retângulo
+        // devolvido pelo OCR já está nessa escala).
+        std::vector<std::uint8_t> wide;
+        int wide_w = 0;
+        int wide_h = 0;
+        if (!PrepareOcrBitmap(sample.pixels.data(), sample.width, sample.height,
+                              sample.width * 4, nullptr, 1, config_.contrast_percent,
+                              wide, wide_w, wide_h)) {
+            return;
+        }
+        OcrMatchRect wide_match;
+        bool has_wide_match = false;
+        RunOcr(engine, wide, wide_w, wide_h, output.label, output.raw,
+               wide_match, has_wide_match);
+
+        // Etapa 2: se o contador foi localizado, trava um recorte menor com
+        // margem e amplia 3x. É aqui que o 1-5 pequeno/estilizado costuma
+        // começar a ser lido.
+        if (!lock_.valid && has_wide_match) {
+            SetLockFromMatch(wide_match, wide_w, wide_h, output.rect);
+            output.has_rect = lock_.valid;
+        }
+        if (lock_.valid) {
+            std::vector<std::uint8_t> tight;
+            int tight_w = 0;
+            int tight_h = 0;
+            if (PrepareOcrBitmap(sample.pixels.data(), sample.width, sample.height,
+                                 sample.width * 4, &lock_.rect, config_.tight_scale,
+                                 config_.contrast_percent, tight, tight_w, tight_h)) {
+                std::string tight_label;
+                std::string tight_raw;
+                OcrMatchRect tight_match;
+                bool has_tight_match = false;
+                try {
+                    RunOcr(engine, tight, tight_w, tight_h, tight_label, tight_raw,
+                           tight_match, has_tight_match);
+                } catch (...) {
+                    tight_label.clear();
+                }
+                if (!tight_label.empty()) {
+                    output.label = std::move(tight_label);
+                    // Raw do recorte travado vai para o log só quando não
+                    // houver raw da faixa (evita duplicar linhas).
+                    if (output.raw.empty()) output.raw = std::move(tight_raw);
+                    if (has_tight_match) {
+                        OcrMatchRect adjusted = tight_match;
+                        adjusted.x = lock_.rect.x
+                            + adjusted.x / static_cast<float>(config_.tight_scale);
+                        adjusted.y = lock_.rect.y
+                            + adjusted.y / static_cast<float>(config_.tight_scale);
+                        adjusted.w /= static_cast<float>(config_.tight_scale);
+                        adjusted.h /= static_cast<float>(config_.tight_scale);
+                        output.rect = adjusted;
+                        output.has_rect = true;
+                    }
+                }
+            }
+        }
+    }
+
+    void SetLockFromMatch(const OcrMatchRect& match, int bitmap_w, int bitmap_h,
+                          OcrMatchRect& out) {
+        const float margin = static_cast<float>(config_.lock_margin_percent) / 100.0f;
+        const float x = std::max(0.0f, match.x - match.w * margin);
+        const float y = std::max(0.0f, match.y - match.h * margin);
+        const float w = std::min(static_cast<float>(bitmap_w) - x,
+                                 match.w * (1.0f + 2.0f * margin));
+        const float h = std::min(static_cast<float>(bitmap_h) - y,
+                                 match.h * (1.0f + 2.0f * margin));
+        if (w <= 0.0f || h <= 0.0f) return;
+
+        lock_.rect = {static_cast<int>(x), static_cast<int>(y),
+                      std::max(1, static_cast<int>(w)), std::max(1, static_cast<int>(h))};
+        lock_.valid = true;
+        lock_.misses = 0;
+        out = {x, y, w, h};
+        log::Debug("OCR: contador localizado em (" + std::to_string(lock_.rect.x) + "," +
+                   std::to_string(lock_.rect.y) + ") " + std::to_string(lock_.rect.w) + "x" +
+                   std::to_string(lock_.rect.h) + " na faixa");
+    }
+
+    void UpdateCounterLock(const RecognizeOutput& output, const OcrSample& sample) {
+        if (!lock_.valid) return;
+        if (output.has_rect) {
+            // Recalibra com o retângulo do recorte travado, convertido de volta
+            // para coordenadas da faixa.
+            OcrMatchRect dummy;
+            SetLockFromMatch(output.rect, sample.width, sample.height, dummy);
+            return;
+        }
+        if (++lock_.misses >= config_.lock_miss_samples) {
+            lock_ = CounterLock{};
+            log::Debug("OCR: lock do contador perdido; voltando para a faixa");
+        }
     }
 #endif
 
@@ -344,6 +519,8 @@ private:
     std::int64_t last_emission_100ns_ = 0;
     std::string last_raw_;
     int sample_count_ = 0;
+    CounterLock lock_;
+    std::vector<OcrSignatureSample> history_;
     bool warned_no_engine_ = false;
 };
 

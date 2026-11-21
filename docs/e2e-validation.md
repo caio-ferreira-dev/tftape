@@ -118,7 +118,7 @@ O evento `recording_stopped` também deve trazer `sidecar_path` e `duration_ms`;
 | M4 | Abrir `tft_round_detector.json` inválido (`band` fora de 0..1) | Core registra aviso no log/UI e grava com a configuração padrão | | A gravação não pode abortar |
 | M5 | Comparar MP4 gravado com OCR vs. sem OCR | Mesmo fps/contagem de frames/duração e nenhum drop perceptível; log sem muitas amostras descartadas | | Ver item 4 (inspeção do MP4) |
 
-> Limitação conhecida: o Windows OCR não fornece confiança numérica por palavra; `confidence` no sidecar é preenchido como `1.0` quando o texto casa com `N-M` e se repete em leituras dentro da janela. Se algum estágio/modo não for reconhecido, ajuste `band` em `tft_round_detector.json` e valide pelo texto bruto no log antes de pedir prints de todos os estágios.
+> Limitação conhecida: o Windows OCR não fornece confiança numérica por palavra; `confidence` no sidecar é preenchido como `1.0` quando o texto casa com `N-M` e se repete em leituras dentro da janela. O detector usa uma faixa estreita sobre a barra, trava um recorte menor ao redor do contador assim que o OCR acerta e amplia esse recorte (`tight_scale`, `contrast_percent`); o `startMs` pode ser antecipado para a mudança visual da barra antes da leitura (`transition_lookback_ms`, `transition_min_diff`), mas o rótulo continua vindo somente do OCR. Se algum estágio/modo não for reconhecido, ajuste `band`/`contrast_percent`/`tight_scale` em `tft_round_detector.json` e valide pelo texto bruto no log (incluindo a linha `OCR: contador localizado em ...`) antes de pedir prints de todos os estágios.
 
 ## 4. Inspeção do MP4
 
@@ -145,7 +145,7 @@ Checar:
 - Carregamento das regras de janela e candidatos avaliados.
 - Regra que selecionou/excluiu cada janela e motivo de falha/ambiguidade.
 - Carregamento do `tft_round_detector.json`, avisos de configuração inválida e linhas `Round detectado por OCR: <label> em <ms> ms`.
-- Linhas `OCR bruto: ... -> <label>`, `OCR: <ms> ms, fila=<n>, descartadas=<n>` e aviso `Windows OCR indisponível` (se aplicável).
+- Linhas `OCR bruto: ... -> <label>`, `OCR: <ms> ms, fila=<n>, descartadas=<n>, lock=sim|nao`, `OCR: contador localizado em ...`, `OCR: transição visual em ... ms` e aviso `Windows OCR indisponível` (se aplicável).
 - Avisos de fontes opcionais e erros de áudio do jogo.
 - Linhas com acentos legíveis (sem `indisponÃvel`).
 

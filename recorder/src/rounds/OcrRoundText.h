@@ -11,7 +11,9 @@ namespace tft {
 /// Exemplos: "ROUND 1 – 1" -> "1-1"; "@ 27 | 1-2" -> "27|1-2".
 std::string NormalizeOcrRoundText(std::string_view text);
 
-/// Encontra o primeiro contador válido (1-1 ... 9-9) em qualquer parte do texto.
+/// Encontra o primeiro contador válido (1-1 ... 9-9) em qualquer parte do
+/// texto. Como fallback, aceita confusões de glifos (S->5, O->0) apenas quando
+/// a linha inteira é o contador (evita rótulos falsos em banners).
 bool TryParseRoundLabel(std::string_view text, std::string& label);
 
 /// Só aceita se o texto BRUTO contém apenas o contador (dígitos, espaços e

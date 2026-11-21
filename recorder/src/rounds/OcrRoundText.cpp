@@ -151,7 +151,30 @@ std::string NormalizeOcrRoundText(std::string_view text) {
 }
 
 bool TryParseRoundLabel(std::string_view text, std::string& label) {
-    return ParsePattern(NormalizeOcrRoundText(text), label, false);
+    if (ParsePattern(NormalizeOcrRoundText(text), label, false)) return true;
+    // Segundo passo, mais conservador que o primeiro: aceita confusões de
+    // glifos (S->5, O->0) somente se a linha INTEIRA for o contador. Assim
+    // "1-S" vira "1-5", mas um banner como "BOAS-VINDAS A RODADA 2!" não
+    // vira um rótulo falso.
+    std::string compact;
+    std::size_t i = 0;
+    std::uint32_t cp = 0;
+    while (NextCodePoint(text, i, cp)) {
+        if (cp >= '0' && cp <= '9') {
+            compact.push_back(static_cast<char>(cp));
+        } else if (IsDashCodePoint(cp)) {
+            compact.push_back('-');
+        } else if (IsSpaceCodePoint(cp)) {
+            continue;
+        } else if (cp == 'S' || cp == 's') {
+            compact.push_back('5');
+        } else if (cp == 'O' || cp == 'o') {
+            compact.push_back('0');
+        } else {
+            return false;
+        }
+    }
+    return ParsePattern(compact, label, true);
 }
 
 bool ParseExactRoundLabel(std::string_view text, std::string& label) {

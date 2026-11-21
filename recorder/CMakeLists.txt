@@ -24,6 +24,8 @@ add_library(recorder_core
   src/rounds/OcrRoundDetector.cpp
   src/rounds/OcrRoundDetectorConfigLoader.cpp
   src/rounds/OcrRoundText.cpp
+  src/rounds/OcrImagePrep.cpp
+  src/rounds/OcrTransition.cpp
   src/app/CommandProtocol.cpp
   src/app/RecorderController.cpp
   src/app/RecordingSession.cpp

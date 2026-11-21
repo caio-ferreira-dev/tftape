@@ -72,10 +72,16 @@ OcrRoundDetectorConfig DefaultOcrRoundDetectorConfig() { return OcrRoundDetector
 
 std::string OcrRoundDetectorConfigSampleJson() {
     return R"({
-  "_comment": "Faixa normalizada (x,y,w,h) do topo da janela onde o Windows OCR procura o contador. Deve cobrir a barra expandida e a compacta.",
-  "band": "0.15,0.0,0.70,0.18",
+  "_comment": "band = faixa normalizada (x,y,w,h) sobre a barra de estagio; o OCR tambem trava um recorte menor apos acertar o contador. contraste/ampliacao melhoram texto pequeno. transition_* afina o timestamp usando a mudanca visual, sem inventar rotulo.",
+  "band": "0.15,0.04,0.70,0.05",
   "sample_interval_ms": "100",
   "warmup_ms": "500",
+  "contrast_percent": "140",
+  "tight_scale": "3",
+  "lock_margin_percent": "30",
+  "lock_miss_samples": "12",
+  "transition_lookback_ms": "5000",
+  "transition_min_diff": "20",
   "confirmation_samples": "2",
   "confirmation_window_ms": "60000",
   "cooldown_ms": "1200",
@@ -114,6 +120,47 @@ bool ParseOcrRoundDetectorConfigJson(const std::string& json,
         if (!ParseInt(*value, cfg.warmup_ms) || cfg.warmup_ms < 0
             || cfg.warmup_ms > 600'000) {
             if (error) *error = "warmup_ms inválido (0..600000)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "contrast_percent")) {
+        if (!ParseInt(*value, cfg.contrast_percent) || cfg.contrast_percent < 50
+            || cfg.contrast_percent > 300) {
+            if (error) *error = "contrast_percent inválido (50..300)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "tight_scale")) {
+        if (!ParseInt(*value, cfg.tight_scale) || cfg.tight_scale < 1 || cfg.tight_scale > 4) {
+            if (error) *error = "tight_scale inválido (1..4)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "lock_margin_percent")) {
+        if (!ParseInt(*value, cfg.lock_margin_percent) || cfg.lock_margin_percent < 0
+            || cfg.lock_margin_percent > 100) {
+            if (error) *error = "lock_margin_percent inválido (0..100)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "lock_miss_samples")) {
+        if (!ParseInt(*value, cfg.lock_miss_samples) || cfg.lock_miss_samples < 1
+            || cfg.lock_miss_samples > 100) {
+            if (error) *error = "lock_miss_samples inválido (1..100)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "transition_lookback_ms")) {
+        if (!ParseInt(*value, cfg.transition_lookback_ms) || cfg.transition_lookback_ms < 1000
+            || cfg.transition_lookback_ms > 300'000) {
+            if (error) *error = "transition_lookback_ms inválido (1000..300000)";
+            return false;
+        }
+    }
+    if (const auto* value = FindString(obj, "transition_min_diff")) {
+        if (!ParseInt(*value, cfg.transition_min_diff) || cfg.transition_min_diff < 1
+            || cfg.transition_min_diff > 100) {
+            if (error) *error = "transition_min_diff inválido (1..100)";
             return false;
         }
     }

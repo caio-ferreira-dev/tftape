@@ -9,9 +9,24 @@
 namespace tft {
 
 struct OcrRoundDetectorConfig {
-    /// Faixa ampla do topo da janela. O OCR encontra o contador dentro dela,
-    /// mesmo com a barra expandida/compacta ou com o indicador deslocado.
-    NormalizedRect band{0.15, 0.0, 0.70, 0.18};
+    /// Faixa estreita sobre a barra de estágio (y ~4%-9%). Timer, retratos e
+    /// banners ficam de fora, porque dominavam o OCR e o contador pequeno
+    /// passava despercebido. A largura/posição continuam configuráveis para
+    /// outros modos; quando o OCR acerta, o detector trava um recorte menor ainda.
+    NormalizedRect band{0.15, 0.04, 0.70, 0.05};
+
+    /// Pré-processamento antes de chamar o OCR: cinza + contraste, e ampliação
+    /// inteira quando o recorte do contador já foi localizado.
+    int contrast_percent = 140;
+    int tight_scale = 3;
+    int lock_margin_percent = 30;
+    int lock_miss_samples = 12;
+
+    /// Refino do timestamp: procura a mudança visual da faixa logo antes da
+    /// primeira leitura confirmada. O rótulo continua vindo só do OCR. A
+    /// janela é curta (5 s) para não confundir banners/animações com a virada.
+    int transition_lookback_ms = 5'000;
+    int transition_min_diff = 20;
 
     /// Frequência de amostragem. O OCR é rápido (~10-25 ms) e o contador é
     /// pequeno: amostrar mais fino aumenta a chance de acertar a leitura.

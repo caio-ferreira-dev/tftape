@@ -68,16 +68,32 @@ TEST(OcrRoundTextTests, RecoversCounterFromDirtyOcrLines) {
     EXPECT_EQ("1-1", label);
 }
 
+TEST(OcrRoundTextTests, RecoversGlyphConfusionsOnWholeCounterLine) {
+    std::string label;
+    ASSERT_TRUE(TryParseRoundLabel("1-S", label));
+    EXPECT_EQ("1-5", label);
+    ASSERT_TRUE(TryParseRoundLabel("2-O", label));
+    EXPECT_EQ("2-0", label);
+    ASSERT_TRUE(TryParseRoundLabel("I-O", label));
+    EXPECT_EQ("1-0", label);
+}
+
 TEST(OcrRoundTextTests, SampleConfigParsesWithDefaults) {
     OcrRoundDetectorConfig config = DefaultOcrRoundDetectorConfig();
     ASSERT_TRUE(ParseOcrRoundDetectorConfigJson(OcrRoundDetectorConfigSampleJson(), config));
 
     EXPECT_DOUBLE_EQ(0.15, config.band.x);
-    EXPECT_DOUBLE_EQ(0.0, config.band.y);
+    EXPECT_DOUBLE_EQ(0.04, config.band.y);
     EXPECT_DOUBLE_EQ(0.70, config.band.w);
-    EXPECT_DOUBLE_EQ(0.18, config.band.h);
+    EXPECT_DOUBLE_EQ(0.05, config.band.h);
     EXPECT_EQ(100, config.sample_interval_ms);
     EXPECT_EQ(500, config.warmup_ms);
+    EXPECT_EQ(140, config.contrast_percent);
+    EXPECT_EQ(3, config.tight_scale);
+    EXPECT_EQ(30, config.lock_margin_percent);
+    EXPECT_EQ(12, config.lock_miss_samples);
+    EXPECT_EQ(5'000, config.transition_lookback_ms);
+    EXPECT_EQ(20, config.transition_min_diff);
     EXPECT_EQ(2, config.confirmation_samples);
     EXPECT_EQ(60'000, config.confirmation_window_ms);
     EXPECT_EQ(1200, config.cooldown_ms);
