@@ -3,8 +3,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:local="using:TFTape.Ui"
     Title="TFTape">
     <Grid Background="{StaticResource Brush.Background}" Padding="16">
+        <Grid.Resources>
+            <local:MillisecondsToTimeConverter x:Key="MsToTime"/>
+        </Grid.Resources>
         <muxc:TabView x:Name="MainTabs" SelectionChanged="OnTabChanged"
                       IsAddTabButtonVisible="False" CanReorderTabs="False">
 
@@ -174,7 +178,8 @@
                                                              AreTransportControlsEnabled="False"
                                                              Stretch="Uniform"
                                                              HorizontalAlignment="Stretch"
-                                                             VerticalAlignment="Stretch"/>
+                                                             VerticalAlignment="Stretch"
+                                                             Tapped="OnVodSurfaceTapped"/>
 
                                     <!-- Barra de ações customizada: transparente, fixa na base e sem botão de transmitir. -->
                                     <Grid x:Name="VodControlBar"
@@ -187,9 +192,10 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
+                                        <!-- Sem Height fixo: a altura padrão evita que o thumb seja cortado. -->
                                         <Slider x:Name="VodTimeline"
                                                 Minimum="0" Maximum="1" Value="0"
-                                                Height="20" Margin="0,0,0,4"
+                                                ThumbToolTipValueConverter="{StaticResource MsToTime}"
                                                 ValueChanged="OnVodTimelineValueChanged"/>
 
                                         <Grid Grid.Row="1">

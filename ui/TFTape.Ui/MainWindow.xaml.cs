@@ -287,7 +287,12 @@ public sealed partial class MainWindow : Window
             _controlsHideTimer.Start();
     }
 
-    private void OnVodPlayPauseClick(object sender, RoutedEventArgs e)
+    private void OnVodPlayPauseClick(object sender, RoutedEventArgs e) => ToggleVodPlayback();
+
+    /// <summary>Um clique na superfície do vídeo também pausa/retoma a reprodução.</summary>
+    private void OnVodSurfaceTapped(object sender, TappedRoutedEventArgs e) => ToggleVodPlayback();
+
+    private void ToggleVodPlayback()
     {
         if (_vodPlayer == null) return;
         var session = _vodPlayer.PlaybackSession;
@@ -372,7 +377,7 @@ public sealed partial class MainWindow : Window
     private void UpdateVodTimeText()
         => VodTimeText.Text = $"{FormatTime(VodTimeline.Value)} / {FormatTime(VodTimeline.Maximum)}";
 
-    private static string FormatTime(double milliseconds)
+    internal static string FormatTime(double milliseconds)
     {
         if (!double.IsFinite(milliseconds) || milliseconds < 0) milliseconds = 0;
         var time = TimeSpan.FromMilliseconds(milliseconds);
