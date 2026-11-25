@@ -7,6 +7,23 @@ namespace TFTape.Ui.Tests;
 public sealed class RecordingUiTests
 {
     [Fact]
+    public void DefaultsTo1080p30Fps()
+    {
+        var vm = new RecorderViewModel(new FakeRecorderService());
+
+        Assert.Equal("1080p", vm.Resolution);
+        Assert.Equal("30", vm.Fps);
+    }
+
+    [Fact]
+    public void RecorderPipeEncodingDoesNotEmitBom()
+    {
+        // Um BOM no primeiro comando faz o core responder "JSON inválido na posição 1"
+        // apenas na primeira gravação após abrir o app.
+        Assert.Empty(RecorderProcessService.JsonLineEncoding.GetPreamble());
+    }
+
+    [Fact]
     public void StartCommandRequiresOutputDirectory()
     {
         var vm = new RecorderViewModel(new FakeRecorderService());

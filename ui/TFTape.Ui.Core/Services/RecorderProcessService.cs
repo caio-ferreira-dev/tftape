@@ -12,6 +12,13 @@ namespace TFTape.Ui.Services;
 public sealed class RecorderProcessService : IRecorderService, IDisposable
 {
     private const int MaxStderrLines = 20;
+
+    /// <summary>
+    /// UTF-8 sem BOM para os pipes JSON-lines. <see cref="Encoding.UTF8"/> grava EF BB BF
+    /// antes da primeira linha; o parser do core exige '{' no início e rejeitava o primeiro
+    /// comando de cada nova sessão (o segundo funcionava porque o processo já estava vivo).
+    /// </summary>
+    public static readonly Encoding JsonLineEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private readonly string _recorderPath;
     private readonly object _stderrLock = new();
     private readonly Queue<string> _stderrLines = new();
@@ -117,9 +124,9 @@ public sealed class RecorderProcessService : IRecorderService, IDisposable
             RedirectStandardError = true,
             // O core emite JSON com mensagens em português em UTF-8; sem isso o .NET
             // usa a code page do console e gera mojibake (ex.: "indisponÃvel").
-            StandardInputEncoding = Encoding.UTF8,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
+            StandardInputEncoding = JsonLineEncoding,
+            StandardOutputEncoding = JsonLineEncoding,
+            StandardErrorEncoding = JsonLineEncoding,
             CreateNoWindow = true
         };
 
