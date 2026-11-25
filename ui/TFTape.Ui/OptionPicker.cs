@@ -20,7 +20,7 @@ public sealed class OptionPicker : UserControl
     private readonly Grid _root = new();
     private readonly HandCursorContentControl _header = new();
     private readonly TextBlock _value = new();
-    private readonly Path _chevron = new();
+    private readonly Microsoft.UI.Xaml.Shapes.Path _chevron = new();
     private readonly Canvas _overlay = new();
     private readonly Border _panel = new();
     private readonly StackPanel _options = new();
