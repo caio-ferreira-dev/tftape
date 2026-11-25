@@ -27,7 +27,11 @@
             </StackPanel>
         </Border>
 
+        <!-- Stretch explícito: sem ele o WinUI 3 mantém o conteúdo do TabView com a altura
+             da janela anterior ao maximize/fullscreen. -->
         <muxc:TabView x:Name="MainTabs" Grid.Row="1" Margin="16,12,16,16"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       SelectionChanged="OnTabChanged"
                       IsAddTabButtonVisible="False" CanReorderTabs="False">
 
@@ -128,7 +132,10 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" VerticalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="300"/>
                             <ColumnDefinition Width="*"/>
@@ -265,7 +272,10 @@
                                     <TextBlock Text="ROUNDS" Style="{StaticResource SectionCaption}" Margin="0,0,0,8"/>
                                     <ScrollViewer Grid.Row="1" HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Auto"
                                                   VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
-                                        <ItemsControl ItemsSource="{x:Bind VodLibrary.SelectedRounds, Mode=OneWay}">
+                                        <!-- Margem inferior reserva o espaço da barra horizontal, que no
+                                             WinUI é desenhada sobre a área de conteúdo do ScrollViewer. -->
+                                        <ItemsControl ItemsSource="{x:Bind VodLibrary.SelectedRounds, Mode=OneWay}"
+                                                      Margin="0,0,0,16">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <StackPanel Orientation="Horizontal" Spacing="8"/>
