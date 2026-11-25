@@ -35,77 +35,122 @@
                       SelectionChanged="OnTabChanged"
                       IsAddTabButtonVisible="False" CanReorderTabs="False">
 
-            <muxc:TabViewItem Header="Gravação" IsClosable="False"
+            <local:HandCursorTabViewItem Header="Gravação" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Spacing="2">
+                    <StackPanel Spacing="4">
                         <TextBlock Text="Gravação" Style="{StaticResource PageTitle}"/>
-                        <TextBlock Text="Grave apenas a janela do Teamfight Tactics" Style="{StaticResource SecondaryText}"/>
+                        <TextBlock Text="Captura apenas a janela do Teamfight Tactics"
+                                   Style="{StaticResource SecondaryText}"/>
                     </StackPanel>
 
-                    <ScrollViewer Grid.Row="1" Margin="0,16,0,16">
-                        <StackPanel Spacing="16">
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="8" Padding="16">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="Status" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" Foreground="{StaticResource Brush.Accent}"/>
-                                    <TextBlock Text="{x:Bind ViewModel.Error, Mode=OneWay}" Foreground="#FFFF6B6B" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{x:Bind ViewModel.Warning, Mode=OneWay}" Foreground="#FFFFD47A" TextWrapping="Wrap"/>
+                    <!-- Duas colunas de 460px + 12px de espaçamento = 932px, centralizadas na aba.
+                         Os cartões mantêm esse tamanho mesmo no fullscreen. -->
+                    <ScrollViewer Grid.Row="1" Margin="0,16,0,12"
+                                  HorizontalScrollBarVisibility="Auto">
+                        <Grid Width="932" HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="460"/>
+                                <ColumnDefinition Width="460"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Row="0" Grid.Column="0" VerticalAlignment="Top"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="STATUS" Style="{StaticResource SectionCaption}"/>
+                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}"
+                                               Foreground="{StaticResource Brush.Accent}" FontSize="14"/>
+                                    <TextBlock Text="{x:Bind ViewModel.Error, Mode=OneWay}"
+                                               Foreground="{StaticResource Brush.Error}" FontSize="12" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{x:Bind ViewModel.Warning, Mode=OneWay}"
+                                               Foreground="{StaticResource Brush.Warning}" FontSize="12" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="8" Padding="16">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="Destino da gravação (.mp4)" FontWeight="SemiBold"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBox Text="{x:Bind ViewModel.OutputDirectory, Mode=TwoWay}" Width="420" PlaceholderText="Selecione a pasta de salvamento"/>
-                                        <Button Content="Escolher pasta" Click="OnPickFolder"/>
-                                    </StackPanel>
-                                    <TextBlock Text="{x:Bind ViewModel.LastFile, Mode=OneWay}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="8" Padding="16">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="Vídeo" FontWeight="SemiBold"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <StackPanel>
+                            <Border Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="VÍDEO" Style="{StaticResource SectionCaption}"/>
+                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
+                                    <Grid HorizontalAlignment="Left">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="6" Margin="0,0,24,0">
                                             <TextBlock Text="Resolução" Style="{StaticResource SecondaryText}"/>
-                                            <ComboBox ItemsSource="{x:Bind ViewModel.Resolutions}" SelectedItem="{x:Bind ViewModel.Resolution, Mode=TwoWay}" Width="140"/>
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.Resolutions}"
+                                                      SelectedItem="{x:Bind ViewModel.Resolution, Mode=TwoWay}"
+                                                      Width="160"/>
                                         </StackPanel>
-                                        <StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="6">
                                             <TextBlock Text="Framerate" Style="{StaticResource SecondaryText}"/>
-                                            <ComboBox ItemsSource="{x:Bind ViewModel.FpsOptions}" SelectedItem="{x:Bind ViewModel.Fps, Mode=TwoWay}" Width="140"/>
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.FpsOptions}"
+                                                      SelectedItem="{x:Bind ViewModel.Fps, Mode=TwoWay}"
+                                                      Width="120"/>
                                         </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Padrão: 1080p a 30 fps." Style="{StaticResource SecondaryText}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Margin="0,12,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="DESTINO DA GRAVAÇÃO (.MP4)" Style="{StaticResource SectionCaption}"/>
+                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Text="{x:Bind ViewModel.OutputDirectory, Mode=TwoWay}"
+                                                 PlaceholderText="Selecione a pasta de salvamento"
+                                                 HorizontalAlignment="Stretch"/>
+                                        <local:HandCursorButton Grid.Column="1" Content="Escolher pasta" Click="OnPickFolder"
+                                                Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind ViewModel.LastFile, Mode=OneWay}"
+                                               Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Margin="12,12,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="ÁUDIO" Style="{StaticResource SectionCaption}"/>
+                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
+                                    <StackPanel Spacing="8">
+                                        <local:HandCursorCheckBox Content="Som do jogo (TFT) — padrão" IsChecked="{x:Bind ViewModel.GameAudio, Mode=TwoWay}"/>
+                                        <local:HandCursorCheckBox Content="Incluir som de outras janelas/sistema" IsChecked="{x:Bind ViewModel.SystemAudio, Mode=TwoWay}"/>
+                                        <local:HandCursorCheckBox Content="Incluir microfone" IsChecked="{x:Bind ViewModel.Microphone, Mode=TwoWay}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="8" Padding="16">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="Áudio" FontWeight="SemiBold"/>
-                                    <CheckBox Content="Som do jogo (TFT) — padrão" IsChecked="{x:Bind ViewModel.GameAudio, Mode=TwoWay}"/>
-                                    <CheckBox Content="Incluir som de outras janelas/sistema" IsChecked="{x:Bind ViewModel.SystemAudio, Mode=TwoWay}"/>
-                                    <CheckBox Content="Incluir microfone" IsChecked="{x:Bind ViewModel.Microphone, Mode=TwoWay}"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
+                            <!-- Rodapé sem cartão: apenas os botões, alinhados à direita do grupo. -->
+                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
+                                        Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+                                <local:HandCursorButton Content="Parar" Command="{x:Bind ViewModel.StopCommand}"/>
+                                <local:HandCursorButton Content="Iniciar gravação" Command="{x:Bind ViewModel.StartCommand}"/>
+                            </StackPanel>
+                        </Grid>
                     </ScrollViewer>
-
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                        <Button Content="Parar" Command="{x:Bind ViewModel.StopCommand}"/>
-                        <Button Content="Iniciar gravação" Command="{x:Bind ViewModel.StartCommand}"/>
-                    </StackPanel>
                 </Grid>
-            </muxc:TabViewItem>
+            </local:HandCursorTabViewItem>
 
-            <muxc:TabViewItem Header="VODs" IsClosable="False"
+            <local:HandCursorTabViewItem Header="VODs" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
                     <Grid.RowDefinitions>
@@ -127,8 +172,8 @@
                                     HorizontalAlignment="Right" VerticalAlignment="Center">
                             <TextBox Text="{x:Bind VodLibrary.Folder, Mode=TwoWay}" Width="320"
                                      PlaceholderText="Pasta com os arquivos .mp4"/>
-                            <Button Content="Escolher pasta" Click="OnPickVodFolder"/>
-                            <Button Content="Atualizar" Command="{x:Bind VodLibrary.RefreshCommand}"/>
+                            <local:HandCursorButton Content="Escolher pasta" Click="OnPickVodFolder"/>
+                            <local:HandCursorButton Content="Atualizar" Command="{x:Bind VodLibrary.RefreshCommand}"/>
                         </StackPanel>
                     </Grid>
 
@@ -165,25 +210,25 @@
                                 <Border Grid.Row="2" Height="1" Background="{StaticResource Brush.Divider}" Margin="0,0,0,10"/>
 
                                 <TextBlock Grid.Row="3" Text="GRAVAÇÕES" Style="{StaticResource SectionCaption}" Margin="0,0,0,6"/>
-                                <ListView Grid.Row="4" x:Name="VodList"
+                                <local:HandCursorListView Grid.Row="4" x:Name="VodList"
                                           ItemsSource="{x:Bind VodLibrary.Vods, Mode=OneWay}"
                                           SelectedItem="{x:Bind VodLibrary.SelectedVod, Mode=TwoWay}"
                                           SelectionMode="Single"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                    <ListView.ItemTemplate>
+                                    <local:HandCursorListView.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Padding="10,8" Spacing="2">
                                                 <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                                 <TextBlock Text="{Binding MetaLine}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
-                                                <TextBlock Text="{Binding LoadError}" Foreground="#FFFFD47A" FontSize="11" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding LoadError}" Foreground="{StaticResource Brush.Warning}" FontSize="11" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
+                                    </local:HandCursorListView.ItemTemplate>
+                                </local:HandCursorListView>
 
                                 <StackPanel Grid.Row="5" Spacing="4" Margin="0,10,0,0">
                                     <TextBlock Text="{x:Bind VodLibrary.Status, Mode=OneWay}" Foreground="{StaticResource Brush.Accent}" FontSize="12"/>
-                                    <TextBlock Text="{x:Bind VodLibrary.Error, Mode=OneWay}" Foreground="#FFFF6B6B" FontSize="12" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{x:Bind VodLibrary.Error, Mode=OneWay}" Foreground="{StaticResource Brush.Error}" FontSize="12" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -206,7 +251,7 @@
                                         CornerRadius="8"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center">
-                                    <Grid>
+                                    <local:HandCursorGrid>
                                         <muxc:MediaPlayerElement x:Name="VodPlayer"
                                                                  AreTransportControlsEnabled="False"
                                                                  Stretch="Uniform"
@@ -226,7 +271,7 @@
                                             </Grid.RowDefinitions>
 
                                             <!-- Sem Height fixo: a altura padrão evita que o thumb seja cortado. -->
-                                            <Slider x:Name="VodTimeline"
+                                            <local:HandCursorSlider x:Name="VodTimeline"
                                                     Minimum="0" Maximum="1" Value="0" Margin="0,0,0,2"
                                                     ThumbToolTipValueConverter="{StaticResource MsToTime}"
                                                     ValueChanged="OnVodTimelineValueChanged"/>
@@ -239,23 +284,23 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <Button x:Name="VodPlayPauseButton"
+                                                <local:HandCursorButton x:Name="VodPlayPauseButton"
                                                         Width="40" Height="40" Padding="0" CornerRadius="20"
                                                         FontSize="18"
                                                         Background="Transparent" BorderThickness="0"
                                                         Click="OnVodPlayPauseClick">
                                                     <SymbolIcon x:Name="VodPlayPauseIcon" Symbol="Play"/>
-                                                </Button>
+                                                </local:HandCursorButton>
                                                 <TextBlock x:Name="VodTimeText" Grid.Column="1"
                                                            VerticalAlignment="Center" Margin="12,0"
                                                            Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"/>
-                                                <Slider x:Name="VodVolume"
+                                                <local:HandCursorSlider x:Name="VodVolume"
                                                         Grid.Column="3" Width="110"
                                                         Minimum="0" Maximum="100" Value="100"
                                                         ValueChanged="OnVodVolumeValueChanged"/>
                                             </Grid>
                                         </Grid>
-                                    </Grid>
+                                    </local:HandCursorGrid>
                                 </Border>
                             </Grid>
 
@@ -283,7 +328,7 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Button Content="{Binding Label}" MinWidth="56" Padding="10,6" FontSize="12" Click="OnRoundClick"/>
+                                                    <local:HandCursorButton Content="{Binding Label}" MinWidth="56" Padding="10,6" FontSize="12" Click="OnRoundClick"/>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
@@ -296,7 +341,7 @@
                         </Grid>
                     </Grid>
                 </Grid>
-            </muxc:TabViewItem>
+            </local:HandCursorTabViewItem>
         </muxc:TabView>
     </Grid>
 </Window>

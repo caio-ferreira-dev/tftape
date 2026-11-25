@@ -25,7 +25,7 @@ public sealed class RecorderViewModel : INotifyPropertyChanged
     private bool _isRecording;
     private string _status = "Pronto";
     private string _outputDirectory;
-    private string _resolution = "720p";
+    private string _resolution = "1080p";
     private string _fps = "30";
     private bool _gameAudio = true;
     private bool _systemAudio;

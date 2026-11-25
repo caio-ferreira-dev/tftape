@@ -10,6 +10,9 @@
     <Color x:Key="Color.TextPrimary">#FFE2E8F0</Color>
     <!-- Derivado de Primary + Surface: azul mais profundo para a aba selecionada. -->
     <Color x:Key="Color.TabSelected">#FF1B3F7A</Color>
+    <!-- Semânticos: mantidos na paleta para não espalhar cores literais no XAML. -->
+    <Color x:Key="Color.Error">#FFFF6B6B</Color>
+    <Color x:Key="Color.Warning">#FFFFD47A</Color>
 
     <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
     <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
@@ -19,4 +22,6 @@
     <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
     <SolidColorBrush x:Key="Brush.Divider" Color="{StaticResource Color.TextSecondary}" Opacity="0.18" />
     <SolidColorBrush x:Key="Brush.TabSelected" Color="{StaticResource Color.TabSelected}" />
+    <SolidColorBrush x:Key="Brush.Error" Color="{StaticResource Color.Error}" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.Warning}" />
 </ResourceDictionary>
