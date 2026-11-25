@@ -90,15 +90,15 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="6" Margin="0,0,24,0">
                                             <TextBlock Text="Resolução" Style="{StaticResource SecondaryText}"/>
-                                            <local:OptionPicker ItemsSource="{x:Bind ViewModel.Resolutions}"
-                                                                SelectedItem="{x:Bind ViewModel.Resolution, Mode=TwoWay}"
-                                                                Width="160"/>
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.Resolutions}"
+                                                      SelectedItem="{x:Bind ViewModel.Resolution, Mode=TwoWay}"
+                                                      Width="160"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="6">
                                             <TextBlock Text="Framerate" Style="{StaticResource SecondaryText}"/>
-                                            <local:OptionPicker ItemsSource="{x:Bind ViewModel.FpsOptions}"
-                                                                SelectedItem="{x:Bind ViewModel.Fps, Mode=TwoWay}"
-                                                                Width="120"/>
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.FpsOptions}"
+                                                      SelectedItem="{x:Bind ViewModel.Fps, Mode=TwoWay}"
+                                                      Width="120"/>
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock Text="Padrão: 1080p a 30 fps." Style="{StaticResource SecondaryText}"/>

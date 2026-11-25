@@ -62,12 +62,12 @@ public sealed class HandCursorCheckBox : CheckBox
     }
 }
 
-/// <summary>ContentControl clicável com cursor de mão (usado pelo seletor de opções).</summary>
-public sealed class HandCursorContentControl : ContentControl
+/// <summary>ComboBox clicável com cursor de mão.</summary>
+public sealed class HandCursorComboBox : ComboBox
 {
-    public HandCursorContentControl()
+    public HandCursorComboBox()
     {
-        DefaultStyleKey = typeof(HandCursorContentControl);
+        DefaultStyleKey = typeof(ComboBox);
         ProtectedCursor = HandCursorResource.Cursor;
     }
 }
