@@ -1,6 +1,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TFTape.Ui">
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
     </Style>
@@ -23,6 +24,8 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="CornerRadius" Value="6" />
+        <!-- Cursor de mão em todos os botões, inclusive os criados dinamicamente. -->
+        <Setter Property="local:CursorHelper.HandCursor" Value="True" />
     </Style>
 
     <!-- TabView: abas com fundo sutil mesmo quando inativas; seleção em azul primário com texto accent. -->
