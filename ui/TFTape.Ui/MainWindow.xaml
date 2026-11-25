@@ -35,7 +35,7 @@
                       SelectionChanged="OnTabChanged"
                       IsAddTabButtonVisible="False" CanReorderTabs="False">
 
-            <muxc:TabViewItem Header="Gravação" IsClosable="False"
+            <local:HandCursorTabViewItem Header="Gravação" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
                     <Grid.RowDefinitions>
@@ -90,13 +90,13 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Spacing="6" Margin="0,0,24,0">
                                             <TextBlock Text="Resolução" Style="{StaticResource SecondaryText}"/>
-                                            <ComboBox ItemsSource="{x:Bind ViewModel.Resolutions}"
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.Resolutions}"
                                                       SelectedItem="{x:Bind ViewModel.Resolution, Mode=TwoWay}"
                                                       Width="160"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="6">
                                             <TextBlock Text="Framerate" Style="{StaticResource SecondaryText}"/>
-                                            <ComboBox ItemsSource="{x:Bind ViewModel.FpsOptions}"
+                                            <local:HandCursorComboBox ItemsSource="{x:Bind ViewModel.FpsOptions}"
                                                       SelectedItem="{x:Bind ViewModel.Fps, Mode=TwoWay}"
                                                       Width="120"/>
                                         </StackPanel>
@@ -132,9 +132,9 @@
                                     <TextBlock Text="ÁUDIO" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
                                     <StackPanel Spacing="8">
-                                        <CheckBox Content="Som do jogo (TFT) — padrão" IsChecked="{x:Bind ViewModel.GameAudio, Mode=TwoWay}"/>
-                                        <CheckBox Content="Incluir som de outras janelas/sistema" IsChecked="{x:Bind ViewModel.SystemAudio, Mode=TwoWay}"/>
-                                        <CheckBox Content="Incluir microfone" IsChecked="{x:Bind ViewModel.Microphone, Mode=TwoWay}"/>
+                                        <local:HandCursorCheckBox Content="Som do jogo (TFT) — padrão" IsChecked="{x:Bind ViewModel.GameAudio, Mode=TwoWay}"/>
+                                        <local:HandCursorCheckBox Content="Incluir som de outras janelas/sistema" IsChecked="{x:Bind ViewModel.SystemAudio, Mode=TwoWay}"/>
+                                        <local:HandCursorCheckBox Content="Incluir microfone" IsChecked="{x:Bind ViewModel.Microphone, Mode=TwoWay}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -148,9 +148,9 @@
                         </Grid>
                     </ScrollViewer>
                 </Grid>
-            </muxc:TabViewItem>
+            </local:HandCursorTabViewItem>
 
-            <muxc:TabViewItem Header="VODs" IsClosable="False"
+            <local:HandCursorTabViewItem Header="VODs" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
                     <Grid.RowDefinitions>
@@ -210,12 +210,12 @@
                                 <Border Grid.Row="2" Height="1" Background="{StaticResource Brush.Divider}" Margin="0,0,0,10"/>
 
                                 <TextBlock Grid.Row="3" Text="GRAVAÇÕES" Style="{StaticResource SectionCaption}" Margin="0,0,0,6"/>
-                                <ListView Grid.Row="4" x:Name="VodList"
+                                <local:HandCursorListView Grid.Row="4" x:Name="VodList"
                                           ItemsSource="{x:Bind VodLibrary.Vods, Mode=OneWay}"
                                           SelectedItem="{x:Bind VodLibrary.SelectedVod, Mode=TwoWay}"
                                           SelectionMode="Single"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                    <ListView.ItemTemplate>
+                                    <local:HandCursorListView.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Padding="10,8" Spacing="2">
                                                 <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
@@ -223,8 +223,8 @@
                                                 <TextBlock Text="{Binding LoadError}" Foreground="{StaticResource Brush.Warning}" FontSize="11" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
+                                    </local:HandCursorListView.ItemTemplate>
+                                </local:HandCursorListView>
 
                                 <StackPanel Grid.Row="5" Spacing="4" Margin="0,10,0,0">
                                     <TextBlock Text="{x:Bind VodLibrary.Status, Mode=OneWay}" Foreground="{StaticResource Brush.Accent}" FontSize="12"/>
@@ -251,7 +251,7 @@
                                         CornerRadius="8"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center">
-                                    <Grid>
+                                    <local:HandCursorGrid>
                                         <muxc:MediaPlayerElement x:Name="VodPlayer"
                                                                  AreTransportControlsEnabled="False"
                                                                  Stretch="Uniform"
@@ -271,7 +271,7 @@
                                             </Grid.RowDefinitions>
 
                                             <!-- Sem Height fixo: a altura padrão evita que o thumb seja cortado. -->
-                                            <Slider x:Name="VodTimeline"
+                                            <local:HandCursorSlider x:Name="VodTimeline"
                                                     Minimum="0" Maximum="1" Value="0" Margin="0,0,0,2"
                                                     ThumbToolTipValueConverter="{StaticResource MsToTime}"
                                                     ValueChanged="OnVodTimelineValueChanged"/>
@@ -294,13 +294,13 @@
                                                 <TextBlock x:Name="VodTimeText" Grid.Column="1"
                                                            VerticalAlignment="Center" Margin="12,0"
                                                            Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"/>
-                                                <Slider x:Name="VodVolume"
+                                                <local:HandCursorSlider x:Name="VodVolume"
                                                         Grid.Column="3" Width="110"
                                                         Minimum="0" Maximum="100" Value="100"
                                                         ValueChanged="OnVodVolumeValueChanged"/>
                                             </Grid>
                                         </Grid>
-                                    </Grid>
+                                    </local:HandCursorGrid>
                                 </Border>
                             </Grid>
 
@@ -341,7 +341,7 @@
                         </Grid>
                     </Grid>
                 </Grid>
-            </muxc:TabViewItem>
+            </local:HandCursorTabViewItem>
         </muxc:TabView>
     </Grid>
 </Window>
