@@ -38,14 +38,9 @@
             <muxc:TabViewItem Header="Gravação" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
-                    <Grid.Resources>
-                        <!-- Formulário compacto: os cartões não acompanham a largura da janela. -->
-                        <x:Double x:Key="RecordingCardWidth">460</x:Double>
-                    </Grid.Resources>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Spacing="4">
@@ -54,12 +49,23 @@
                                    Style="{StaticResource SecondaryText}"/>
                     </StackPanel>
 
-                    <ScrollViewer Grid.Row="1" Margin="0,16,0,12">
-                        <!-- Cartões seguem o mesmo ritmo da aba VODs: título em SectionCaption,
-                             divisor sutil, espaçamento de 10/12 e cantos de 10px. -->
-                        <StackPanel Spacing="12">
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
-                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
+                    <!-- Duas colunas de 460px + 12px de espaçamento = 932px, centralizadas na aba.
+                         Os cartões mantêm esse tamanho mesmo no fullscreen. -->
+                    <ScrollViewer Grid.Row="1" Margin="0,16,0,12"
+                                  HorizontalScrollBarVisibility="Auto">
+                        <Grid Width="932" HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="460"/>
+                                <ColumnDefinition Width="460"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Row="0" Grid.Column="0" VerticalAlignment="Top"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="STATUS" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -72,29 +78,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
-                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="DESTINO DA GRAVAÇÃO (.MP4)" Style="{StaticResource SectionCaption}"/>
-                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox Text="{x:Bind ViewModel.OutputDirectory, Mode=TwoWay}"
-                                                 PlaceholderText="Selecione a pasta de salvamento"
-                                                 HorizontalAlignment="Stretch"/>
-                                        <Button Grid.Column="1" Content="Escolher pasta" Click="OnPickFolder"
-                                                Margin="8,0,0,0"/>
-                                    </Grid>
-                                    <TextBlock Text="{x:Bind ViewModel.LastFile, Mode=OneWay}"
-                                               Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
-                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
+                            <Border Grid.Row="0" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="VÍDEO" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -120,8 +105,29 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
-                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
+                            <Border Grid.Row="1" Grid.Column="0" VerticalAlignment="Top" Margin="0,12,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="DESTINO DA GRAVAÇÃO (.MP4)" Style="{StaticResource SectionCaption}"/>
+                                    <Border Height="1" Background="{StaticResource Brush.Divider}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Text="{x:Bind ViewModel.OutputDirectory, Mode=TwoWay}"
+                                                 PlaceholderText="Selecione a pasta de salvamento"
+                                                 HorizontalAlignment="Stretch"/>
+                                        <Button Grid.Column="1" Content="Escolher pasta" Click="OnPickFolder"
+                                                Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind ViewModel.LastFile, Mode=OneWay}"
+                                               Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Grid.Column="1" VerticalAlignment="Top" Margin="12,12,0,0"
+                                    Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="ÁUDIO" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -132,17 +138,15 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                        </StackPanel>
-                    </ScrollViewer>
 
-                    <Border Grid.Row="2" Background="{StaticResource Brush.Surface}"
-                            CornerRadius="10" Padding="12,10" Margin="0,12,0,0"
-                            Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                            <Button Content="Parar" Command="{x:Bind ViewModel.StopCommand}"/>
-                            <Button Content="Iniciar gravação" Command="{x:Bind ViewModel.StartCommand}"/>
-                        </StackPanel>
-                    </Border>
+                            <!-- Rodapé sem cartão: apenas os botões, alinhados à direita do grupo. -->
+                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
+                                        Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+                                <Button Content="Parar" Command="{x:Bind ViewModel.StopCommand}"/>
+                                <Button Content="Iniciar gravação" Command="{x:Bind ViewModel.StartCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
                 </Grid>
             </muxc:TabViewItem>
 
