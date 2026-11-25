@@ -97,7 +97,8 @@ public sealed class OptionPicker : UserControl
 
         // Canvas não participa do medidas do Grid: abrir a lista não altera a altura
         // do cartão pai. O painel fica posicionado logo abaixo do cabeçalho.
-        _overlay.ClipToBounds = false;
+        // Canvas não recorta os filhos por padrão no WinUI, então a lista pode
+        // ultrapassar os limites do cartão sem precisar de propriedade extra.
         _overlay.HorizontalAlignment = HorizontalAlignment.Stretch;
         _overlay.VerticalAlignment = VerticalAlignment.Stretch;
         Canvas.SetZIndex(_overlay, 1);
