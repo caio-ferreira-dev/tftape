@@ -38,6 +38,10 @@
             <muxc:TabViewItem Header="Gravação" IsClosable="False"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Padding="8">
+                    <Grid.Resources>
+                        <!-- Formulário compacto: os cartões não acompanham a largura da janela. -->
+                        <x:Double x:Key="RecordingCardWidth">460</x:Double>
+                    </Grid.Resources>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -54,7 +58,8 @@
                         <!-- Cartões seguem o mesmo ritmo da aba VODs: título em SectionCaption,
                              divisor sutil, espaçamento de 10/12 e cantos de 10px. -->
                         <StackPanel Spacing="12">
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
+                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="STATUS" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -67,7 +72,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
+                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="DESTINO DA GRAVAÇÃO (.MP4)" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -87,7 +93,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
+                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="VÍDEO" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -113,7 +120,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16">
+                            <Border Background="{StaticResource Brush.Surface}" CornerRadius="10" Padding="16"
+                                    Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="ÁUDIO" Style="{StaticResource SectionCaption}"/>
                                     <Border Height="1" Background="{StaticResource Brush.Divider}"/>
@@ -128,7 +136,8 @@
                     </ScrollViewer>
 
                     <Border Grid.Row="2" Background="{StaticResource Brush.Surface}"
-                            CornerRadius="10" Padding="12,10" Margin="0,12,0,0">
+                            CornerRadius="10" Padding="12,10" Margin="0,12,0,0"
+                            Width="{StaticResource RecordingCardWidth}" HorizontalAlignment="Left">
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                             <Button Content="Parar" Command="{x:Bind ViewModel.StopCommand}"/>
                             <Button Content="Iniciar gravação" Command="{x:Bind ViewModel.StartCommand}"/>
