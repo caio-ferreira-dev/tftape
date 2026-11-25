@@ -16,7 +16,7 @@ public sealed class OptionPicker : UserControl
     private static readonly Brush TransparentBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
     private readonly Grid _root = new();
-    private readonly HandCursorBorder _header = new();
+    private readonly HandCursorContentControl _header = new();
     private readonly TextBlock _value = new();
     private readonly FontIcon _chevron = new();
     private readonly Border _panel = new();
@@ -81,7 +81,7 @@ public sealed class OptionPicker : UserControl
         _header.BorderThickness = new Thickness(1);
         _header.CornerRadius = new CornerRadius(6);
         _header.Padding = new Thickness(10, 8, 10, 8);
-        _header.Child = headerContent;
+        _header.Content = headerContent;
         _header.PointerEntered += (_, _) => _header.Background = PaletteBrush("Brush.Primary");
         _header.PointerExited += (_, _) => _header.Background = PaletteBrush("Brush.Surface");
         _header.Tapped += (_, _) => SetOpen(_panel.Visibility != Visibility.Visible);
@@ -110,13 +110,13 @@ public sealed class OptionPicker : UserControl
 
         foreach (var item in ItemsSource)
         {
-            var option = new HandCursorBorder
+            var option = new HandCursorContentControl
             {
                 Tag = item,
                 Background = TransparentBrush,
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(10, 6, 10, 6),
-                Child = new TextBlock
+                Content = new TextBlock
                 {
                     Text = item,
                     FontSize = 14,
