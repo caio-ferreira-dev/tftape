@@ -202,7 +202,8 @@ public sealed class RecordingUiTests
         vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
         vm.OutputDirectory = @"C:\Vods";
-        vm.Resolution = "1080p";
+        // O default agora é 1080p; usar 720p garante uma mudança real e dispara o evento.
+        vm.Resolution = "720p";
         vm.Microphone = true;
 
         Assert.Contains(nameof(RecorderViewModel.OutputDirectory), changed);
