@@ -24,7 +24,6 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueue _uiQueue = DispatcherQueue.GetForCurrentThread();
     private readonly DispatcherQueueTimer _controlsHideTimer;
     private MediaPlayer? _vodPlayer;
-    private Windows.Foundation.Size _vodViewportSize;
     private double _vodAspectRatio = 16.0 / 9.0;
     private bool _suppressTimelineSeek;
 
@@ -52,7 +51,13 @@ public sealed partial class MainWindow : Window
         VodLibrary.PlayRequested += OnPlayRequested;
         VodLibrary.SeekRequested += OnSeekRequested;
         // Window não tem evento Loaded no WinUI 3: usa o elemento raiz do conteúdo XAML.
-        if (Content is FrameworkElement root) root.Loaded += OnRootLoaded;
+        // O SizeChanged da raiz cobre maximize/fullscreen, quando o viewport do player
+        // nem sempre recebe um último SizeChanged com a medida final.
+        if (Content is FrameworkElement root)
+        {
+            root.Loaded += OnRootLoaded;
+            root.SizeChanged += OnRootSizeChanged;
+        }
         // WinUI 3 expõe Window.Closed (AppWindow.Closing é a versão com cancellation).
         Closed += OnClosed;
     }
@@ -96,6 +101,8 @@ public sealed partial class MainWindow : Window
     }
 
     private async void OnRootLoaded(object sender, RoutedEventArgs e) => await VodLibrary.RefreshAsync();
+
+    private void OnRootSizeChanged(object sender, SizeChangedEventArgs e) => UpdatePlayerSize();
 
     private async void OnTabChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -222,24 +229,26 @@ public sealed partial class MainWindow : Window
 
     // --------------------------------------------------------- enquadramento
 
-    private void OnVodViewportSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        _vodViewportSize = e.NewSize;
-        UpdatePlayerSize();
-    }
+    private void OnVodViewportSizeChanged(object sender, SizeChangedEventArgs e) => UpdatePlayerSize();
 
     /// <summary>Ajusta o quadro à proporção do vídeo: sem barras pretas e sem cortes.</summary>
+    /// <remarks>
+    /// Usa a medida atual do viewport em vez de um tamanho guardado do último SizeChanged:
+    /// ao maximizar entrar em fullscreen, o evento do viewport pode não trazer a medida final.
+    /// </remarks>
     private void UpdatePlayerSize()
     {
-        if (_vodViewportSize.Width <= 0 || _vodViewportSize.Height <= 0) return;
+        var viewportWidth = VodPlayerViewport.ActualWidth;
+        var viewportHeight = VodPlayerViewport.ActualHeight;
+        if (viewportWidth <= 0 || viewportHeight <= 0) return;
 
         var aspect = _vodAspectRatio > 0 ? _vodAspectRatio : 16.0 / 9.0;
-        var width = _vodViewportSize.Width;
+        var width = viewportWidth;
         var height = width / aspect;
 
-        if (height > _vodViewportSize.Height)
+        if (height > viewportHeight)
         {
-            height = _vodViewportSize.Height;
+            height = viewportHeight;
             width = height * aspect;
         }
 

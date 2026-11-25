@@ -27,7 +27,11 @@
             </StackPanel>
         </Border>
 
+        <!-- Stretch explícito: sem ele o WinUI 3 mantém o conteúdo do TabView com a altura
+             da janela anterior ao maximize/fullscreen. -->
         <muxc:TabView x:Name="MainTabs" Grid.Row="1" Margin="16,12,16,16"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       SelectionChanged="OnTabChanged"
                       IsAddTabButtonVisible="False" CanReorderTabs="False">
 
@@ -128,13 +132,16 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" VerticalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="300"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Coluna esquerda: seleção, lista, rounds e status com hierarquia visual clara. -->
+                        <!-- Coluna esquerda: seleção, lista e status com hierarquia visual clara. -->
                         <Border Grid.Column="0" Background="{StaticResource Brush.Surface}"
                                 CornerRadius="10" Padding="12" Margin="0,0,12,0">
                             <Grid>
@@ -144,8 +151,6 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
@@ -176,91 +181,116 @@
                                     </ListView.ItemTemplate>
                                 </ListView>
 
-                                <TextBlock Grid.Row="5" Text="ROUNDS" Style="{StaticResource SectionCaption}" Margin="0,10,0,6"/>
-                                <ScrollViewer Grid.Row="6" HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Auto"
-                                              VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
-                                    <ItemsControl ItemsSource="{x:Bind VodLibrary.SelectedRounds, Mode=OneWay}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" Spacing="8"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Content="{Binding Label}" MinWidth="56" Padding="10,6" FontSize="12" Click="OnRoundClick"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-
-                                <StackPanel Grid.Row="7" Spacing="4" Margin="0,10,0,0">
+                                <StackPanel Grid.Row="5" Spacing="4" Margin="0,10,0,0">
                                     <TextBlock Text="{x:Bind VodLibrary.Status, Mode=OneWay}" Foreground="{StaticResource Brush.Accent}" FontSize="12"/>
                                     <TextBlock Text="{x:Bind VodLibrary.Error, Mode=OneWay}" Foreground="#FFFF6B6B" FontSize="12" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{x:Bind VodLibrary.RoundsHint, Mode=OneWay}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
 
-                        <!-- O quadro é dimensionado na proporção real do vídeo (sidecar ou NaturalVideoSize). -->
-                        <Grid x:Name="VodPlayerViewport" Grid.Column="1"
-                              SizeChanged="OnVodViewportSizeChanged"
-                              PointerMoved="OnVodPointerMoved"
-                              PointerEntered="OnVodPointerEntered"
-                              PointerExited="OnVodPointerExited">
-                            <Border x:Name="VodPlayerFrame"
-                                    Background="{StaticResource Brush.Background}"
-                                    CornerRadius="8"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                                <Grid>
-                                    <muxc:MediaPlayerElement x:Name="VodPlayer"
-                                                             AreTransportControlsEnabled="False"
-                                                             Stretch="Uniform"
-                                                             HorizontalAlignment="Stretch"
-                                                             VerticalAlignment="Stretch"
-                                                             Tapped="OnVodSurfaceTapped"/>
+                        <!-- Coluna direita: player e, logo abaixo, os marcadores do vídeo atual. -->
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                                    <!-- Barra de ações customizada: transparente, fixa na base e sem botão de transmitir. -->
-                                    <Grid x:Name="VodControlBar"
-                                          VerticalAlignment="Bottom"
-                                          Background="Transparent"
-                                          Padding="20,0,20,14"
-                                          Visibility="Visible">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                            <!-- O quadro é dimensionado na proporção real do vídeo (sidecar ou NaturalVideoSize). -->
+                            <Grid x:Name="VodPlayerViewport"
+                                  SizeChanged="OnVodViewportSizeChanged"
+                                  PointerMoved="OnVodPointerMoved"
+                                  PointerEntered="OnVodPointerEntered"
+                                  PointerExited="OnVodPointerExited">
+                                <Border x:Name="VodPlayerFrame"
+                                        Background="{StaticResource Brush.Background}"
+                                        CornerRadius="8"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                    <Grid>
+                                        <muxc:MediaPlayerElement x:Name="VodPlayer"
+                                                                 AreTransportControlsEnabled="False"
+                                                                 Stretch="Uniform"
+                                                                 HorizontalAlignment="Stretch"
+                                                                 VerticalAlignment="Stretch"
+                                                                 Tapped="OnVodSurfaceTapped"/>
 
-                                        <!-- Sem Height fixo: a altura padrão evita que o thumb seja cortado. -->
-                                        <Slider x:Name="VodTimeline"
-                                                Minimum="0" Maximum="1" Value="0" Margin="0,0,0,2"
-                                                ThumbToolTipValueConverter="{StaticResource MsToTime}"
-                                                ValueChanged="OnVodTimelineValueChanged"/>
+                                        <!-- Barra de ações customizada: transparente, fixa na base e sem botão de transmitir. -->
+                                        <Grid x:Name="VodControlBar"
+                                              VerticalAlignment="Bottom"
+                                              Background="Transparent"
+                                              Padding="20,0,20,14"
+                                              Visibility="Visible">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                            <!-- Sem Height fixo: a altura padrão evita que o thumb seja cortado. -->
+                                            <Slider x:Name="VodTimeline"
+                                                    Minimum="0" Maximum="1" Value="0" Margin="0,0,0,2"
+                                                    ThumbToolTipValueConverter="{StaticResource MsToTime}"
+                                                    ValueChanged="OnVodTimelineValueChanged"/>
 
-                                            <Button x:Name="VodPlayPauseButton"
-                                                    Width="40" Height="40" Padding="0" CornerRadius="20"
-                                                    FontSize="18"
-                                                    Background="Transparent" BorderThickness="0"
-                                                    Click="OnVodPlayPauseClick">
-                                                <SymbolIcon x:Name="VodPlayPauseIcon" Symbol="Play"/>
-                                            </Button>
-                                            <TextBlock x:Name="VodTimeText" Grid.Column="1"
-                                                       VerticalAlignment="Center" Margin="12,0"
-                                                       Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"/>
-                                            <Slider x:Name="VodVolume"
-                                                    Grid.Column="3" Width="110"
-                                                    Minimum="0" Maximum="100" Value="100"
-                                                    ValueChanged="OnVodVolumeValueChanged"/>
+                                            <Grid Grid.Row="1">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Button x:Name="VodPlayPauseButton"
+                                                        Width="40" Height="40" Padding="0" CornerRadius="20"
+                                                        FontSize="18"
+                                                        Background="Transparent" BorderThickness="0"
+                                                        Click="OnVodPlayPauseClick">
+                                                    <SymbolIcon x:Name="VodPlayPauseIcon" Symbol="Play"/>
+                                                </Button>
+                                                <TextBlock x:Name="VodTimeText" Grid.Column="1"
+                                                           VerticalAlignment="Center" Margin="12,0"
+                                                           Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"/>
+                                                <Slider x:Name="VodVolume"
+                                                        Grid.Column="3" Width="110"
+                                                        Minimum="0" Maximum="100" Value="100"
+                                                        ValueChanged="OnVodVolumeValueChanged"/>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
+                                </Border>
+                            </Grid>
+
+                            <!-- Marcadores do vídeo selecionado: abaixo do player, com o mesmo
+                                 espaçamento/cartão das demais seções da aba. -->
+                            <Border Grid.Row="1" Background="{StaticResource Brush.Surface}"
+                                    CornerRadius="10" Padding="12,10" Margin="0,12,0,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="ROUNDS" Style="{StaticResource SectionCaption}" Margin="0,0,0,8"/>
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Auto"
+                                                  VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+                                        <!-- Margem inferior reserva o espaço da barra horizontal, que no
+                                             WinUI é desenhada sobre a área de conteúdo do ScrollViewer. -->
+                                        <ItemsControl ItemsSource="{x:Bind VodLibrary.SelectedRounds, Mode=OneWay}"
+                                                      Margin="0,0,0,16">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="{Binding Label}" MinWidth="56" Padding="10,6" FontSize="12" Click="OnRoundClick"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                    <TextBlock Grid.Row="2" Text="{x:Bind VodLibrary.RoundsHint, Mode=OneWay}"
+                                               Style="{StaticResource SecondaryText}" TextWrapping="Wrap"
+                                               Margin="0,8,0,0"/>
                                 </Grid>
                             </Border>
                         </Grid>
