@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Shapes;
 
 namespace TFTape.Ui;
 
@@ -18,9 +20,11 @@ public sealed class OptionPicker : UserControl
     private readonly Grid _root = new();
     private readonly HandCursorContentControl _header = new();
     private readonly TextBlock _value = new();
-    private readonly FontIcon _chevron = new();
+    private readonly Path _chevron = new();
+    private readonly Canvas _overlay = new();
     private readonly Border _panel = new();
     private readonly StackPanel _options = new();
+    private readonly TranslateTransform _panelTransform = new();
     private FrameworkElement? _outsideListener;
 
     public static readonly DependencyProperty ItemsSourceProperty = DependencyProperty.Register(
@@ -56,9 +60,6 @@ public sealed class OptionPicker : UserControl
 
     private void BuildUi()
     {
-        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
         var headerContent = new Grid();
         headerContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         headerContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -69,10 +70,17 @@ public sealed class OptionPicker : UserControl
         Grid.SetColumn(_value, 0);
         headerContent.Children.Add(_value);
 
-        _chevron.Glyph = "\uE0D7";
-        _chevron.FontSize = 12;
+        // Path em vez de FontIcon: o glifo de seta varia entre as fontes do sistema.
+        var chevronFigure = new PathFigure { StartPoint = new Windows.Foundation.Point(0, 0) };
+        chevronFigure.Segments.Add(new LineSegment { Point = new Windows.Foundation.Point(5, 5) });
+        chevronFigure.Segments.Add(new LineSegment { Point = new Windows.Foundation.Point(10, 0) });
+        var chevronGeometry = new PathGeometry();
+        chevronGeometry.Figures.Add(chevronFigure);
+        _chevron.Data = chevronGeometry;
+        _chevron.Stroke = PaletteBrush("Brush.TextSecondary");
+        _chevron.StrokeThickness = 1.5;
         _chevron.VerticalAlignment = VerticalAlignment.Center;
-        _chevron.Foreground = PaletteBrush("Brush.TextSecondary");
+        _chevron.HorizontalAlignment = HorizontalAlignment.Center;
         Grid.SetColumn(_chevron, 1);
         headerContent.Children.Add(_chevron);
 
@@ -85,22 +93,40 @@ public sealed class OptionPicker : UserControl
         _header.PointerEntered += (_, _) => _header.Background = PaletteBrush("Brush.Primary");
         _header.PointerExited += (_, _) => _header.Background = PaletteBrush("Brush.Surface");
         _header.Tapped += (_, _) => SetOpen(_panel.Visibility != Visibility.Visible);
-        Grid.SetRow(_header, 0);
         _root.Children.Add(_header);
+
+        // Canvas não participa do medidas do Grid: abrir a lista não altera a altura
+        // do cartão pai. O painel fica posicionado logo abaixo do cabeçalho.
+        _overlay.ClipToBounds = false;
+        _overlay.HorizontalAlignment = HorizontalAlignment.Stretch;
+        _overlay.VerticalAlignment = VerticalAlignment.Stretch;
+        Canvas.SetZIndex(_overlay, 1);
+        _root.Children.Add(_overlay);
 
         _panel.Background = PaletteBrush("Brush.Surface");
         _panel.BorderBrush = PaletteBrush("Brush.Divider");
         _panel.BorderThickness = new Thickness(1);
         _panel.CornerRadius = new CornerRadius(6);
         _panel.Padding = new Thickness(4);
-        _panel.Margin = new Thickness(0, 4, 0, 0);
+        _panel.RenderTransform = _panelTransform;
         _panel.Visibility = Visibility.Collapsed;
         _panel.Child = _options;
-        Grid.SetRow(_panel, 1);
-        _root.Children.Add(_panel);
+        _overlay.Children.Add(_panel);
+
+        _root.SizeChanged += (_, _) =>
+        {
+            if (_panel.Visibility == Visibility.Visible) PositionPanel();
+        };
 
         Content = _root;
         MinWidth = 116;
+    }
+
+    private void PositionPanel()
+    {
+        Canvas.SetLeft(_panel, 0);
+        Canvas.SetTop(_panel, _header.ActualHeight + 4);
+        _panel.Width = _root.ActualWidth;
     }
 
     private void RebuildOptions()
@@ -136,7 +162,45 @@ public sealed class OptionPicker : UserControl
 
     private void UpdateValue() => _value.Text = SelectedItem ?? string.Empty;
 
-    private void SetOpen(bool open) => _panel.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+    private void SetOpen(bool open)
+    {
+        if (!open)
+        {
+            _panel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        PositionPanel();
+        _panel.Visibility = Visibility.Visible;
+
+        var duration = new Duration(TimeSpan.FromMilliseconds(140));
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var fade = new DoubleAnimation
+        {
+            From = 0,
+            To = 1,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, _panel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        var slide = new DoubleAnimation
+        {
+            From = -6,
+            To = 0,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(slide, _panelTransform);
+        Storyboard.SetTargetProperty(slide, "Y");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(fade);
+        storyboard.Children.Add(slide);
+        storyboard.Begin();
+    }
 
     private static Brush PaletteBrush(string key)
     {
