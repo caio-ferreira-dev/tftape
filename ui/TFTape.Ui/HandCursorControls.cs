@@ -62,25 +62,11 @@ public sealed class HandCursorCheckBox : CheckBox
     }
 }
 
-/// <summary>ComboBox clicável com cursor de mão, inclusive nos itens do dropdown.</summary>
-public sealed class HandCursorComboBox : ComboBox
+/// <summary>Border clicável com cursor de mão (usado pelo seletor de opções).</summary>
+public sealed class HandCursorBorder : Border
 {
-    public HandCursorComboBox()
+    public HandCursorBorder()
     {
-        DefaultStyleKey = typeof(ComboBox);
-        ProtectedCursor = HandCursorResource.Cursor;
-    }
-
-    // O popup usa containers ComboBoxItem; sem o override só o cabeçalho recebe a mão.
-    protected override DependencyObject GetContainerForItemOverride() => new HandCursorComboBoxItem();
-}
-
-/// <summary>Item do dropdown do ComboBox com cursor de mão.</summary>
-public sealed class HandCursorComboBoxItem : ComboBoxItem
-{
-    public HandCursorComboBoxItem()
-    {
-        DefaultStyleKey = typeof(ComboBoxItem);
         ProtectedCursor = HandCursorResource.Cursor;
     }
 }
